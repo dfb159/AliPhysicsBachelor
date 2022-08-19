@@ -19,89 +19,108 @@
 class AliReducedAnalysisFilterTrees : public AliReducedAnalysisTaskSE {
   
 public:
-  AliReducedAnalysisFilterTrees();
-  AliReducedAnalysisFilterTrees(const Char_t* name, const Char_t* title);
-  virtual ~AliReducedAnalysisFilterTrees();
-  
-  virtual void Init();
-  virtual void Process();
-  virtual void Finish();
-  
-  // setters
-  void AddEventCut(AliReducedInfoCut* cut) {fEventCuts.Add(cut);}
-  void AddTrackCut(AliReducedInfoCut* cut) {fTrackCuts.Add(cut);}
-  void AddPairCut(AliReducedInfoCut* cut) {fPairCuts.Add(cut);}
-  void SetWriteFilteredTracks(Bool_t option=kTRUE) {fWriteFilteredTracks=option;}
-  void SetWriteFilteredPairs(Bool_t option=kTRUE) {fWriteFilteredPairs=option;}
-  void SetRejectEmptyEvents(Bool_t option=kTRUE) {fRejectEmptyEvents=option;}
-  void SetMCJpsiPtWeights(TH1F* weights) {fMCJpsiPtWeights = weights;}
-  
-  void SetBuildCandidatePairs(AliReducedPairInfo::CandidateType type) {fBuildCandidatePairs=kTRUE; fCandidateType=type;}
-  void SetBuildCandidateLikePairs(Bool_t option=kTRUE) {fBuildCandidateLikePairs=option;}
-  void AddCandidateLeg1Cut(AliReducedInfoCut* cut) {fLeg1Cuts.Add(cut);}
-  void AddCandidateLeg2Cut(AliReducedInfoCut* cut) {fLeg2Cuts.Add(cut);}
-  void AddCandidatePairCut(AliReducedInfoCut* cut) {fCandidatePairCuts.Add(cut);}
-  void SetRunCandidatePrefilter(Bool_t option=kTRUE) {fRunCandidatePrefilter=option;}
-  void SetRunCandidatePrefilterOnSameCharge(Bool_t option=kTRUE) {fRunCandidatePrefilterOnSameCharge=option;}
-  void AddCandidateLeg1PrefilterCut(AliReducedInfoCut* cut) {fLeg1PrefilterCuts.Add(cut);}
-  void AddCandidateLeg2PrefilterCut(AliReducedInfoCut* cut) {fLeg2PrefilterCuts.Add(cut);}
-  void AddCandidateLeg1PairPrefilterCut(AliReducedInfoCut* cut) {fLeg1PairPrefilterCuts.Add(cut);}
-  void AddCandidateLeg2PairPrefilterCut(AliReducedInfoCut* cut) {fLeg2PairPrefilterCuts.Add(cut);}
-  
-  void SetRunOverMC(Bool_t option) {fOptionRunOverMC = option;};
-  // getters
-  virtual AliHistogramManager* GetHistogramManager() const {return fHistosManager;}
-  Bool_t GetWriteFilteredTracks() const {return fWriteFilteredTracks;}
-  Int_t GetNTrackCuts() const {return fTrackCuts.GetEntries();}
-  const Char_t* GetTrackCutName(Int_t i) const {return (i<fTrackCuts.GetEntries() ? fTrackCuts.At(i)->GetName() : "");} 
-  Bool_t GetWriteFilteredPairs() const {return fWriteFilteredPairs;}
-  Bool_t GetRejectEmptyEvents() const {return fRejectEmptyEvents;}
-  Int_t GetNPairCuts() const {return fPairCuts.GetEntries();}
-  const Char_t* GetPairCutName(Int_t i) const {return (i<fPairCuts.GetEntries() ? fPairCuts.At(i)->GetName() : "");} 
-  Bool_t GetBuildCandidatePairs() const {return fBuildCandidatePairs;}
-  Bool_t GetBuildCandidateLikePairs() const {return fBuildCandidateLikePairs;}
-  Int_t GetCandidateType() const {return fCandidateType;}
-  Bool_t GetRunCandidatePrefilter() const {return fRunCandidatePrefilter;}
-  Int_t GetNCandidateLegCuts() const {return fLeg1Cuts.GetEntries();}
-  const Char_t* GetCandidateLegCutName(Int_t i, Int_t leg);
-  Bool_t IsAsymmetricDecayChannel();
-   Bool_t GetRunOverMC() const {return fOptionRunOverMC;};
-  //  Int_t GetNLegCandidateMCcuts() const {return fLegCandidatesMCcuts.GetEntries();}
-  //const Char_t* GetLegCandidateMCcutName(Int_t i) const {return (i<fLegCandidatesMCcuts.GetEntries() ? fLegCandidatesMCcuts.At(i)->GetName() : "");}
-  const Char_t* GetLegCandidateMCcutName() const {return (fLegCandidatesMCcuts ? fLegCandidatesMCcuts->GetName() : "");}
-  Int_t GetNJpsiMotherMCCuts() const {return fJpsiMotherMCcuts.GetEntries();}
-  const Char_t* GetJpsiMotherMCcutName(Int_t i) const {return (i<fJpsiMotherMCcuts.GetEntries() ? fJpsiMotherMCcuts.At(i)->GetName() : "");}
+   AliReducedAnalysisFilterTrees();
+   AliReducedAnalysisFilterTrees(const Char_t* name, const Char_t* title);
+   virtual ~AliReducedAnalysisFilterTrees();
+   
+   virtual void Init();
+   virtual void Process();
+   virtual void Finish();
+   
+   // setters
+   void UseTracks1(Bool_t option=kTRUE) {fUseTrack1=option;}
+   void UseTracks2(Bool_t option=kTRUE) {fUseTrack2=option;}
+   void UseFullTracksOnly(Bool_t option=kTRUE) {fRequireFullTracks=option;}
 
- 
- /* void AddLegCandidateMCcut(AliReducedInfoCut* cut) {
-     if(fLegCandidatesMCcuts.GetEntries()>=32) return;
-     fLegCandidatesMCcuts.Add(cut);
-  }*/
- // NOTE: The MC truth selection works with just one MC truth cut. It is not implemented properly for asymmetric decay channels,
- //         just one MC selection is applied to both legs.
- //       In the case that an MC truth selection is applied, then only built pairs which fulfill the MC truth will be written in the filtered trees.
- void SetLegCandidateMCcut(AliReducedInfoCut* cut) {
-     //if(fLegCandidatesMCcuts.GetEntries()>=32) return;
-     fLegCandidatesMCcuts  = cut;
-  }
+   void DebugEvery(Int_t lineNo) {fEventPrintNo=lineNo;}
+   void AddEventCut(AliReducedInfoCut* cut) {fEventCuts.Add(cut);}
+   void AddTrackCut(AliReducedInfoCut* cut) {fTrackCuts.Add(cut);}
+   void AddPairCut(AliReducedInfoCut* cut) {fPairCuts.Add(cut);}
+   void SetWriteFilteredTracks(Bool_t option=kTRUE) {fWriteFilteredTracks=option;}
+   void SetWriteFilteredPairs(Bool_t option=kTRUE) {fWriteFilteredPairs=option;}
+   void SetRejectEmptyTracks(Bool_t option=kTRUE) {fRejectEmptyTracks=option;}
+   void SetRejectEmptyPairs(Bool_t option=kTRUE) {fRejectEmptyPairs=option;}
+   void SetRejectEmptyEvents(Bool_t option=kTRUE) {fRejectEmptyPairs=option;fRejectEmptyTracks=option;}
+   void SetRejectMCTruth(Bool_t option=kTRUE) {fRejectMCTruth=option;}
+   void SetMCJpsiPtWeights(TH1F* weights) {fMCJpsiPtWeights = weights;}
+   
+   void SetBuildCandidatePairs(AliReducedPairInfo::CandidateType type) {fBuildCandidatePairs=kTRUE; fCandidateType=type;}
+   void SetBuildCandidateLikePairs(Bool_t option=kTRUE) {fBuildCandidateLikePairs=option;}
+   void AddCandidateLeg1Cut(AliReducedInfoCut* cut) {fLeg1Cuts.Add(cut);}
+   void AddCandidateLeg2Cut(AliReducedInfoCut* cut) {fLeg2Cuts.Add(cut);}
+   void AddCandidatePairCut(AliReducedInfoCut* cut) {fCandidatePairCuts.Add(cut);}
+   void SetRunCandidatePrefilter(Bool_t option=kTRUE) {fRunCandidatePrefilter=option;}
+   void SetRunCandidatePrefilterOnSameCharge(Bool_t option=kTRUE) {fRunCandidatePrefilterOnSameCharge=option;}
+   void AddCandidateLeg1PrefilterCut(AliReducedInfoCut* cut) {fLeg1PrefilterCuts.Add(cut);}
+   void AddCandidateLeg2PrefilterCut(AliReducedInfoCut* cut) {fLeg2PrefilterCuts.Add(cut);}
+   void AddCandidateLeg1PairPrefilterCut(AliReducedInfoCut* cut) {fLeg1PairPrefilterCuts.Add(cut);}
+   void AddCandidateLeg2PairPrefilterCut(AliReducedInfoCut* cut) {fLeg2PairPrefilterCuts.Add(cut);}
+   
+   void SetRunOverMC(Bool_t option) {fOptionRunOverMC = option;};
+   // getters
+   virtual AliHistogramManager* GetHistogramManager() const {return fHistosManager;}
+   Bool_t GetWriteFilteredTracks() const {return fWriteFilteredTracks;}
+   Int_t GetNTrackCuts() const {return fTrackCuts.GetEntries();}
+   const Char_t* GetTrackCutName(Int_t i) const {return (i<fTrackCuts.GetEntries() ? fTrackCuts.At(i)->GetName() : "");} 
+   Bool_t GetWriteFilteredPairs() const {return fWriteFilteredPairs;}
+   Bool_t GetRejectEmptyTracks() const {return fRejectEmptyTracks;}
+   Bool_t GetRejectEmptyPairs() const {return fRejectEmptyPairs;}
+   Bool_t GetRejectEmptyEvents() const {return fRejectEmptyTracks && fRejectEmptyPairs;}
+   Bool_t GetRejectMCTruth() const {return fRejectMCTruth;}
+   Int_t GetNPairCuts() const {return fPairCuts.GetEntries();}
+   const Char_t* GetPairCutName(Int_t i) const {return (i<fPairCuts.GetEntries() ? fPairCuts.At(i)->GetName() : "");} 
+   Bool_t GetBuildCandidatePairs() const {return fBuildCandidatePairs;}
+   Bool_t GetBuildCandidateLikePairs() const {return fBuildCandidateLikePairs;}
+   Int_t GetCandidateType() const {return fCandidateType;}
+   Bool_t GetRunCandidatePrefilter() const {return fRunCandidatePrefilter;}
+   Int_t GetNCandidateLegCuts() const {return fLeg1Cuts.GetEntries();}
+   const Char_t* GetCandidateLegCutName(Int_t i, Int_t leg);
+   Bool_t IsAsymmetricDecayChannel();
+      Bool_t GetRunOverMC() const {return fOptionRunOverMC;};
+   //  Int_t GetNLegCandidateMCcuts() const {return fLegCandidatesMCcuts.GetEntries();}
+   //const Char_t* GetLegCandidateMCcutName(Int_t i) const {return (i<fLegCandidatesMCcuts.GetEntries() ? fLegCandidatesMCcuts.At(i)->GetName() : "");}
+   const Char_t* GetLegCandidateMCcutName() const {return (fLegCandidatesMCcuts ? fLegCandidatesMCcuts->GetName() : "");}
+   Int_t GetNJpsiMotherMCCuts() const {return fJpsiMotherMCcuts.GetEntries();}
+   const Char_t* GetJpsiMotherMCcutName(Int_t i) const {return (i<fJpsiMotherMCcuts.GetEntries() ? fJpsiMotherMCcuts.At(i)->GetName() : "");}
 
-  void AddJpsiMotherMCCut(AliReducedInfoCut* cutMother, AliReducedInfoCut* cutElectron) {
-     if(fJpsiMotherMCcuts.GetEntries()>=32) return;
-     fJpsiMotherMCcuts.Add(cutMother);
-     fJpsiElectronMCcuts.Add(cutElectron);
-  }
+   
+   /* void AddLegCandidateMCcut(AliReducedInfoCut* cut) {
+      if(fLegCandidatesMCcuts.GetEntries()>=32) return;
+      fLegCandidatesMCcuts.Add(cut);
+   }*/
+   // NOTE: The MC truth selection works with just one MC truth cut. It is not implemented properly for asymmetric decay channels,
+   //         just one MC selection is applied to both legs.
+   //       In the case that an MC truth selection is applied, then only built pairs which fulfill the MC truth will be written in the filtered trees.
+   void SetLegCandidateMCcut(AliReducedInfoCut* cut) {
+      //if(fLegCandidatesMCcuts.GetEntries()>=32) return;
+      fLegCandidatesMCcuts  = cut;
+   }
 
-  void FillMCTruthHistograms();
+   void AddJpsiMotherMCCut(AliReducedInfoCut* cutMother, AliReducedInfoCut* cutElectron) {
+      if(fJpsiMotherMCcuts.GetEntries()>=32) return;
+      fJpsiMotherMCcuts.Add(cutMother);
+      fJpsiElectronMCcuts.Add(cutElectron);
+   }
+
+   void FillMCTruthHistograms();
  
 protected:
    AliHistogramManager* fHistosManager;   // Histogram manager
+
+   Int_t fEventPrintNo;             // each n lines debug info is written
+   Int_t fFoundPairs;               // counter of all found candidates so far
+   Bool_t fUseTrack1;               // use tracks in fTracks1 list for legs
+   Bool_t fUseTrack2;               // use tracks in fTracks2 list for legs
+   Bool_t fRequireFullTracks;    // use tracks only if they contain fully reconstructed tracks
    
    TList fEventCuts;               // array of event cuts used for filtering
    TList fTrackCuts;               // array of track cuts used for filtering
    Bool_t fWriteFilteredTracks;   // filter the track list
    TList fPairCuts;                  // array of pair cuts used for filtering
    Bool_t fWriteFilteredPairs;   // filter the pair list
-   Bool_t fRejectEmptyEvents;     // if true, do not write events without tracks or pairs
+   Bool_t fRejectEmptyTracks;     // if true, do not write events without tracks or pairs
+   Bool_t fRejectEmptyPairs;     // if true, do not write events without tracks or pairs
+   Bool_t fRejectMCTruth;          // if true, do not select mcTruth tracks(, which are reconstructed)
    
    Bool_t fBuildCandidatePairs;   // if true, build additional candidate pairs from selected tracks 
    Bool_t fBuildCandidateLikePairs;  // if true, build also like pairs (e.g. like-sign for symmetric decay channels)
