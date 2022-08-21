@@ -1,31 +1,16 @@
 #include <vector>
 
-//TODO isAliroot definition?
+// file for running a AddTask on a local Tree without verbosity
+// not for grid jobs
+// written for ROOT6
 
-// Grid running parameters
-TString gGridRunMode = "full";
-TString gRootVersion = "v5-34-30-alice7-6";
-TString gAlirootVersion = "v5-09-03a-1";
-TString gAliphysicsVersion = "vAN-20170804-1";
-//TString gGridDataDir = "/alice/data/2015/LHC15o";
-//TString gGridDataDir = "/alice/data/2016/LHC16q";
-TString gGridDataDir = "/alice/data/2016/LHC16s";
-//TString gGridDataDir = "/alice/sim/2017/LHC17d13_cent/";
-//TString gGridDataDir = "/alice/cern.ch/user/i/iarsene/work/outputDst";
-//TString gGridDataPattern = "*/pass1/*/AliESDs.root";
-//TString gGridDataPattern = "*/pass1/PWGDQ/DQ_PbPb/231_20161009-2048/*/dstTree.root";
-TString gGridDataPattern = "*/pass1_FAST/*/AliESDs.root";
-//TString gGridDataPattern = "*/AOD/*/AliAOD.root";
-//TString gGridDataPattern = "*/pass1_CENT_wSDD/AOD/*/AliAOD.root";
-TString gGridWorkingDir = "work";
-TString gGridOutputDir = "20170805_dstTrees_LHC16rs";
-Int_t gGridMaxInputFileNumber = 50;
+//TODO isAliroot definition?
 
 vector<TString>* extractFiles(TString filename);
 TChain* makeChain(vector<TString>* filename, TString inputType);
 
 //______________________________________________________________________________________________________________________________________
-void runAnalysisTrainJoey(TString infile="events.txt", TString runmode = "local", TString inputType="reducedEvent", Bool_t hasMC = kFALSE,
+void runAnalysisTrainJoey(TString infile="events.txt", TString inputType="reducedEvent", Bool_t hasMC = kFALSE,
             Bool_t writeTree = kFALSE, TString tasks="dst", TString prod = "LHC10h", Int_t nEntries=-1, Int_t firstEntry=0,
             TString addTask="AddTask_joey_FilterTrees.C", TString pathForMacros="$ALICE_PHYSICS/PWGDQ/reducedTree/macros") {
     //
@@ -50,45 +35,7 @@ void runAnalysisTrainJoey(TString infile="events.txt", TString runmode = "local"
     AliAnalysisManager *mgr = new AliAnalysisManager("ReducedTreeAnalysis");
 
     // Create and configure the alien handler plugin
-    runmode.ToLower();
     AliAnalysisGrid *alienHandler = NULL;
-    if(runmode.Contains("grid")) {
-        // Detect which tasks are being run and add the needed grid output files
-        TObjArray* arr = tasks.Tokenize(";");
-        TString outputFiles = "";
-        if (writeTree) outputFiles = "dstTree.root";
-        if ((!writeTree && arr->GetEntries()>0) || (writeTree && arr->GetEntries()>1)) 
-            outputFiles += " dstAnalysisHistograms.root";
-#ifdef __CLING__  // ROOT6 version
-        std::stringstream creatalienhandleradd;
-        creatalienhandleradd << ".x " << gSystem->Getenv("ALICE_PHYSICS") << "/PWGDQ/reducedTree/macros/CreateAlienHandler.C(";
-        creatalienhandleradd << "\"" << infile << "\", ";
-        creatalienhandleradd << "\"" << gGridRunMode.Data() << "\", ";
-        creatalienhandleradd << "\"" << gGridDataDir.Data() << "\", ";
-        creatalienhandleradd << "\"" << gGridDataPattern.Data() << "\", ";
-        creatalienhandleradd         << gGridMaxInputFileNumber << ", ";
-        creatalienhandleradd << "\"" << gGridWorkingDir.Data() << "\", ";
-        creatalienhandleradd << "\"" << gGridOutputDir.Data() << "\", ";
-        creatalienhandleradd << "\"" << outputFiles.Data() << "\", ";
-        creatalienhandleradd << "\"" << gRootVersion.Data() << "\", ";
-        creatalienhandleradd << "\"" << gAlirootVersion.Data() << "\", ";
-        creatalienhandleradd << "\"" << gAliphysicsVersion.Data() << "\")";
-        std::string creatalienhandleraddstr = creatalienhandleradd.str();
-        std::cout << "Calling Add macro using command string: " << creatalienhandleraddstr << std::endl;
-        alienHandler = (AliAnalysisGrid*)gROOT->ProcessLine(creatalienhandleraddstr.c_str());
-#else // ROOT5 version
-        gROOT->LoadMacro("$ALICE_PHYSICS/PWGDQ/reducedTree/macros/CreateAlienHandler.C");
-        alienHandler = CreateAlienHandlerPbPb(infile, gGridRunMode, gGridDataDir, gGridDataPattern, gGridMaxInputFileNumber,
-                                            gGridWorkingDir, gGridOutputDir, outputFiles,
-                                            gRootVersion, gAlirootVersion, gAliphysicsVersion);
-#endif
-        if (!alienHandler) {
-            cout << "runAnalysisTrain.C ::      Could not create the alien handler. Check it out!" << endl;
-            return;
-        }
-        mgr->SetGridHandler(alienHandler);
-    }
-
     // Create the input handler
     inputType.ToLower();
     AliInputEventHandler* inputHandler = NULL;
@@ -116,14 +63,9 @@ void runAnalysisTrainJoey(TString infile="events.txt", TString runmode = "local"
         mgr->SetMCtruthEventHandler(mc);
     }
 
-    //==== Add tender ====
-    //   gROOT->LoadMacro("AddTaskTender.C");
-    //   AddTaskTender();
-
     if (inputType.Contains("esd") || inputType.Contains("aod")) {         // no need if we run over reduced events
         //==== Physics Selection ====
         Bool_t applyPileupCuts = kTRUE;
-#ifdef __CLING__ // ROOT6 version
         std::stringstream physseladd;
         physseladd << ".x " << gSystem->Getenv("ALICE_PHYSICS") << "/OADB/macros/AddTaskPhysicsSelection.C(";
         physseladd << hasMC << ", ";
@@ -131,34 +73,22 @@ void runAnalysisTrainJoey(TString infile="events.txt", TString runmode = "local"
         std::string physseladdstr = physseladd.str();
         std::cout << "Calling Add macro using command string: " << physseladdstr << std::endl;
         AliPhysicsSelectionTask* physSelTask = (AliPhysicsSelectionTask*)gROOT->ProcessLine(physseladdstr.c_str());
-#else // ROOT5 version
-        gROOT->LoadMacro("$ALICE_PHYSICS/OADB/macros/AddTaskPhysicsSelection.C");
-        AliPhysicsSelectionTask* physSelTask = AddTaskPhysicsSelection(hasMC, applyPileupCuts);
-#endif
+
         //===== ADD CENTRALITY: ===
         if(!prod.CompareTo("LHC10h") || !prod.CompareTo("LHC11h")) {         // Run-1 Pb-Pb
-#ifdef __CLING__ // ROOT6 version
             std::stringstream centradd;
             centradd << ".x " << gSystem->Getenv("ALICE_PHYSICS") << "/OADB/macros/AddTaskCentrality.C";
             std::string centraddstr = centradd.str();
             std::cout << "Calling Add macro using command string: " << centraddstr << std::endl;
             gROOT->ProcessLine(centraddstr.c_str());
-#else // ROOT5 version
-            gROOT->LoadMacro("$ALICE_PHYSICS/OADB/macros/AddTaskCentrality.C");
-            AddTaskCentrality();
-#endif
         } else  { // Run-2
       //if (!prod.CompareTo("LHC15o") || !prod.CompareTo("LHC16l") || !prod.CompareTo("LHC16q") || !prod.CompareTo("LHC16t")) {         // Run-2 Pb-Pb
-#ifdef __CLING__ // ROOT6 version
             std::stringstream multsel;
             multsel << ".x " << gSystem->Getenv("ALICE_PHYSICS") << "/OADB/COMMON/MULTIPLICITY/macros/AddTaskMultSelection.C";
             std::string multselstr = multsel.str();
             std::cout << "Calling Add macro using command string: " << multselstr << std::endl;
             AliMultSelectionTask* multTask = (AliMultSelectionTask*)gROOT->ProcessLine(multselstr.c_str());
-#else // ROOT5 version
-            gROOT->LoadMacro("$ALICE_PHYSICS/OADB/COMMON/MULTIPLICITY/macros/AddTaskMultSelection.C");
-            AliMultSelectionTask* multTask = AddTaskMultSelection();
-#endif
+
             if (hasMC && !prod.CompareTo("LHC15o"))
                 multTask->SetAlternateOADBforEstimators("LHC15o-DefaultMC-HIJING");
             if (hasMC && (!prod.CompareTo("LHC16q") || !prod.CompareTo("LHC16t")))
@@ -172,61 +102,36 @@ void runAnalysisTrainJoey(TString infile="events.txt", TString runmode = "local"
         //===== ADD PID RESPONSE: ===
         Bool_t tuneOnData = kTRUE;
         TString recoPass = "1";
-#ifdef __CLING__ // ROOT6 version
         std::stringstream pidresp;
         pidresp << ".x " << gSystem->Getenv("ALICE_ROOT") << "/ANALYSIS/macros/AddTaskPIDResponse.C";
         if (hasMC) pidresp << "(" << hasMC << ", " << kTRUE << ", " << tuneOnData << ", " << recoPass << ")";
         std::string pidrespstr = pidresp.str();
         std::cout << "Calling Add macro using command string: " << pidrespstr << std::endl;
         gROOT->ProcessLine(pidrespstr.c_str());
-#else // ROOT5 version
-        gROOT->LoadMacro("$ALICE_ROOT/ANALYSIS/macros/AddTaskPIDResponse.C");
-        if (hasMC) AddTaskPIDResponse(hasMC, kTRUE, tuneOnData, recoPass);
-        else AddTaskPIDResponse();
-#endif
+
     }
 
-#ifdef __CLING__ // ROOT6 version
+    //___________MACRO CALL____________
     std::stringstream trainadd;
     trainadd << ".x " << macroPath << "("; // macro name
-    trainadd << (!runmode.CompareTo("grid") ? kTRUE : kFALSE) << ", "; // isAliRoot
+    trainadd << kTRUE << ", "; // isAliRoot
     trainadd << runMode << ", "; // runMode
     trainadd << (hasMC ? "kTRUE" : "kFALSE") << ", "; // isMC
     trainadd << "\"" << prod << "\")"; // prod
     std::string trainaddstr = trainadd.str();
     std::cout << "Calling Add macro using command string: " << trainaddstr << std::endl;
     gROOT->ProcessLine(trainaddstr.c_str());
-#else // ROOT5 version
-    cout << "ROOT5 version for macro AddTask_joey_FilterTrees" << endl;
-    gROOT->LoadMacro("$ALICE_PHYSICS/PWGDQ/reducedTree/macros/AddTask_joey_FilterTrees.C");
-    AddTask_joey_FilterTrees((!runmode.CompareTo("grid") ? kTRUE : kFALSE), runMode, hasMC ? kTrue : kFalse, prod);
-#endif
+
     if (!mgr->InitAnalysis()) return;
 
     vector<TString>* files = extractFiles(infile);
+    TChain* chain = makeChain(files, inputType);
 
-    TChain* chain = NULL;
-    if (!runmode.Contains("grid")) {
-        chain = makeChain(files, inputType);
-    }
+    mgr->PrintStatus();
 
-   TProof* proof=0x0;
-   if (runmode.Contains("proof")) {
-      proof = TProof::Open("");
-      chain->SetProof();
-   }
-
-   mgr->PrintStatus();
-
-   // Start analysis
-   if(nEntries==-1) nEntries=1234567890;
-   if(runmode.Contains("local"))
-      mgr->StartAnalysis("local", chain, nEntries, firstEntry);
-   if(runmode.Contains("proof"))
-      mgr->StartAnalysis("proof", chain, nEntries, firstEntry);
-   if(runmode.Contains("grid"))
-      mgr->StartAnalysis("grid", nEntries, firstEntry);
-
+    // Start analysis
+    if(nEntries==-1) nEntries=1234567890;
+    mgr->StartAnalysis("local", chain, nEntries, firstEntry);
 
     //--------------------------------------------
     // piping event stat histograms from tree file(s) into analysis output(s)

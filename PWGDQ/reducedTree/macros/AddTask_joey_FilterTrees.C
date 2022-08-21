@@ -20,13 +20,13 @@ void SetupHistogramManager(AliReducedAnalysisFilterTrees* task,  TString prod /*
 void DefineHistograms(AliReducedAnalysisFilterTrees* task, TString prod /*="LHC10h"*/);
 
 //__________________________________________________________________________________________
-AliAnalysisTask* AddTask_joey_FilterTrees(Bool_t isAliRoot=kTRUE, Int_t runMode=1, Bool_t isMC = kFALSE, /*Bool_t isInjected = kFALSE, */TString prod="LHC10h") {    
+AliAnalysisTask* AddTask_joey_FilterTrees(Bool_t isAliRoot=kTRUE, Int_t runMode=1, Bool_t isMC = kFALSE, TString prod="LHC10h") {    
    // isAliRoot={kTRUE for ESD/AOD analysis on the grid, kFALSE for local analysis on reduced trees}
    // runMode={AliAnalysisTaskReducedEventProcessor::kUseOnTheFlyReducedEvents=1, AliAnalysisTaskReducedEventProcessor::kUseEventsFromTree=2}
 
 	TString className = "AddTask_joey_FilterTrees";
 
-  cout << "Running " << className << ": (isAliRoot = " << isAliRoot << ", runMode = " << runMode << ", isMC = " << isMC << /*", isInjected = " << isInjected << */", prod = " << prod << ")" << endl;
+  cout << "Running " << className << ": (isAliRoot = " << isAliRoot << ", runMode = " << runMode << ", isMC = " << isMC << ", prod = " << prod << ")" << endl;
 
   AliReducedAnalysisFilterTrees* filterTask = new AliReducedAnalysisFilterTrees("FilterTrees","filter DST trees");
   filterTask->Init();
@@ -44,23 +44,6 @@ AliAnalysisTask* AddTask_joey_FilterTrees(Bool_t isAliRoot=kTRUE, Int_t runMode=
   filterTask->UseTracks2(kFALSE); // Base Tracks no usefull info
   filterTask->UseFullTracksOnly(kTRUE);
   filterTask->DebugEvery(1000); // -1 for no debug
-
-  /*
-  if (isMC && isInjected) { // gauthier
-    TF1* fPtJpsi = new TF1("fPtJpsi","[0]*x/pow(1+(x/[1])*(x/[1]),[2])",0,30);
-    fPtJpsi->SetParameters(1,4.09,3.04); // arxiv:2108.01906
-    TFile* filePtWeights = new TFile("/gluster1/glegras/InjectedJpsiPtWeights.root","read");
-    TH1F* hpt; filePtWeights->GetObject("Pt",hpt);
-    if(!hpt) {
-       filePtWeights = new TFile("~/alice/AliPhysics/PWGDQ/reducedTree/macros/InjectedJpsiPtWeights.root","read");
-       filePtWeights->GetObject("Pt",hpt);
-    }
-    TH1F* hPtWeights = new TH1F("hPtWeights","Weights for rescaling injected Jpsi",hpt->GetNbinsX(),hpt->GetBinLowEdge(1),hpt->GetBinCenter(hpt->GetNbinsX())+hpt->GetBinCenter(hpt->GetNbinsX())/2-hpt->GetBinLowEdge(hpt->GetNbinsX())/2);
-    for (int n=1;n<hpt->GetNbinsX()+1;n++) hPtWeights->SetBinContent(n,fPtJpsi->Eval(hPtWeights->GetBinCenter(n))/hpt->GetBinContent(n));
-    hPtWeights->Scale(1./hPtWeights->GetMaximum());
-
-    filterTask->SetMCJpsiPtWeights(hPtWeights); //only if MC and injected Jpsi
-  }//*/
 
   Setup(filterTask, prod);
   // initialize an AliAnalysisTask which will wrap the AliReducedAnalysisFilterTrees such that it can be run in an aliroot analysis train (e.g. LEGO, local analysis etc)
@@ -98,10 +81,6 @@ AliAnalysisTask* AddTask_joey_FilterTrees(Bool_t isAliRoot=kTRUE, Int_t runMode=
 
 //_________________________________________________________________
 void Setup(AliReducedAnalysisFilterTrees* processor, TString prod /*="LHC10h"*/) {
-  //
-  // Configure the analysis task
-  // Setup histograms, handlers, cuts, etc.
-  // 
   SetupCuts(processor, prod);
   SetupHistogramManager(processor, prod);
 }
