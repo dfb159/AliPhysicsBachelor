@@ -13,10 +13,6 @@ TChain* makeChain(vector<TString>* filename, TString inputType);
 void runAnalysisTrainJoey(TString infile="events.txt", TString inputType="reducedEvent", Bool_t hasMC = kFALSE,
             Bool_t writeTree = kFALSE, TString tasks="dst", TString prod = "LHC10h", Int_t nEntries=-1, Int_t firstEntry=0,
             TString addTask="AddTask_joey_FilterTrees.C", TString pathForMacros="$ALICE_PHYSICS/PWGDQ/reducedTree/macros") {
-    //
-    // infile: list of input files if mode is local, or list of runs for job submission if mode is grid
-    //      or one single .root file for analysis
-    //
 
     // Setup analysis parameters
     TString macroPath = pathForMacros + "/" + addTask;
