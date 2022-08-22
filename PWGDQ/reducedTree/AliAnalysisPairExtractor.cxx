@@ -93,6 +93,7 @@ void AliAnalysisPairExtractor::extractData(TTree* intree) { // extraction method
       nextTrack.Reset(); leg1 = 0x0; leg2 = 0x0;
       for (int k = 0; k < fTracks->GetEntries(); k++) {
         track = (AliReducedTrackInfo*) nextTrack(); // TODO does this overwrite data or create new object (keep leg1, leg2 data)
+        if (track->IsMCTruth()) continue;
         if (track->TrackId() == pair->LegId(0)) {leg1 = (AliReducedTrackInfo*) fTracks->At(k);} // does this create a nice copy
         if (track->TrackId() == pair->LegId(1)) {leg2 = (AliReducedTrackInfo*) fTracks->At(k);}
         //cout << track->TrackId() << ", ";

@@ -517,8 +517,8 @@ TChain* makeChain(vactor<TString>* files, TString inputType) {
         chain=new TChain("aodTree");
 
     for (const TString ss : *files) {
-        cout << "Adding file: " << line << endl;
-        chain->AddFile(line);
+        cout << "Adding file: " << ss << endl;
+        chain->AddFile(ss);
     }
     cout << "Number of events in chain: " << chain->GetEntries() << endl;
     return chain;
