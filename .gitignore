@@ -92,4 +92,7 @@ event_stat.root
 AliAOD.NanoAOD.root
 /cmake-build-debug/
 .idea/
+
+# custom workspace and analysis
 AliPhysics.code-workspace
+*.root

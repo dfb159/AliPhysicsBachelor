@@ -21,17 +21,13 @@ TString gGridWorkingDir = "work";
 TString gGridOutputDir = "20170805_dstTrees_LHC16rs";
 Int_t gGridMaxInputFileNumber = 50;
 
-vector<TString>* extractFiles(TString filename);
-TChain* makeChain(vector<TString>* filename, TString inputType);
+vector<TString> extractFiles(TString filename);
+TChain* makeChain(vector<TString> filename, TString inputType);
 
 //______________________________________________________________________________________________________________________________________
 void runAnalysisTrainJoey(TString infile="events.txt", TString runmode = "local", TString inputType="reducedEvent", Bool_t hasMC = kFALSE,
-            Bool_t writeTree = kFALSE, TString tasks="dst", TString prod = "LHC10h", Int_t nEntries=-1, Int_t firstEntry=0,
-            TString addTask="AddTask_joey_FilterTrees.C", TString pathForMacros="$ALICE_PHYSICS/PWGDQ/reducedTree/macros") {
-    //
-    // infile: list of input files if mode is local, or list of runs for job submission if mode is grid
-    //      or one single .root file for analysis
-    //
+            TString addTask="AddTask_joey_FilterTrees.C", TString pathForMacros="$ALICE_PHYSICS/PWGDQ/reducedTree/macros",
+            Bool_t writeTree = kFALSE, TString tasks="dst", TString prod = "LHC10h", Int_t nEntries=-1, Int_t firstEntry=0) {
 
     // Setup analysis parameters
     TString macroPath = pathForMacros + "/" + addTask;
@@ -203,7 +199,7 @@ void runAnalysisTrainJoey(TString infile="events.txt", TString runmode = "local"
 #endif
     if (!mgr->InitAnalysis()) return;
 
-    vector<TString>* files = extractFiles(infile);
+    vector<TString> files = extractFiles(infile);
 
     TChain* chain = NULL;
     if (!runmode.Contains("grid")) {
@@ -243,7 +239,7 @@ void runAnalysisTrainJoey(TString infile="events.txt", TString runmode = "local"
             cout << "----------------------" << endl << "Piping the TList of event stat histograms into analysis output(s) from the list of ReducedTree files:" << endl << "----------------------" << endl;
             
             Int_t nFile = 0;
-            for (const TString line : *files) { // loop over input files
+            for (const TString line : files) { // loop over input files
                 if (line.IsNull()) continue;
 
                 nFile++;
@@ -485,10 +481,10 @@ void runAnalysisTrainJoey(TString infile="events.txt", TString runmode = "local"
 };
 
 //_______________________________________________________________________________
-vector<TString>* extractFiles(TString filename) {
-    vector<TString>* liste;
+vector<TString> extractFiles(TString filename) {
+    vector<TString> liste;
     if (filename.EndsWith(".root")) { // add single file as input
-        liste->push_back(filename);
+        liste.push_back(filename);
     } else { // add every line in file as input
         ifstream in;
         in.open(filename.Data());
@@ -497,7 +493,7 @@ vector<TString>* extractFiles(TString filename) {
         while (in.good()) {
             in >> line;
             if (!line.IsNull()) {
-                liste->push_back(line);
+                liste.push_back(line);
             }
         }
     }
@@ -505,7 +501,7 @@ vector<TString>* extractFiles(TString filename) {
 }
 
 //_______________________________________________________________________________
-TChain* makeChain(vactor<TString>* files, TString inputType) {
+TChain* makeChain(vector<TString> files, TString inputType) {
     // make a chain using the trees from the list of files
 
     TChain *chain = NULL;
@@ -516,7 +512,7 @@ TChain* makeChain(vactor<TString>* files, TString inputType) {
     if(inputType.Contains("aod"))
         chain=new TChain("aodTree");
 
-    for (const TString ss : *files) {
+    for (const TString ss : files) {
         cout << "Adding file: " << ss << endl;
         chain->AddFile(ss);
     }
