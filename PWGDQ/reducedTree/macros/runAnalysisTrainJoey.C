@@ -27,7 +27,7 @@ TChain* makeChain(vector<TString> filename, TString inputType);
 //______________________________________________________________________________________________________________________________________
 void runAnalysisTrainJoey(TString infile="events.txt", TString runmode = "local", TString inputType="reducedEvent", Bool_t hasMC = kFALSE,
             TString addTask="AddTask_joey_FilterTrees.C", TString pathForMacros="$ALICE_PHYSICS/PWGDQ/reducedTree/macros",
-            Bool_t writeTree = kFALSE, TString tasks="dst", TString prod = "LHC10h", Int_t nEntries=-1, Int_t firstEntry=0) {
+            Bool_t writeTree = kFALSE, TString tasks="dst", TString prod = "LHC10h", Long64_t nEntries=-1L, Long64_t firstEntry=0L) {
 
     // Setup analysis parameters
     TString macroPath = pathForMacros + "/" + addTask;
@@ -215,7 +215,7 @@ void runAnalysisTrainJoey(TString infile="events.txt", TString runmode = "local"
    mgr->PrintStatus();
 
    // Start analysis
-   if(nEntries==-1) nEntries=1234567890;
+   if(nEntries<0) nEntries=1234567890L;
    if(runmode.Contains("local"))
       mgr->StartAnalysis("local", chain, nEntries, firstEntry);
    if(runmode.Contains("proof"))
