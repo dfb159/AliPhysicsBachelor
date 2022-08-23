@@ -8,13 +8,14 @@
 #include "AliAnalysisPairExtractor.h"
 #include <iostream>
 #include <dirent.h>
-#include <string.h>
+#include <string>
 
 ClassImp(AliAnalysisPairExtractor)
 
 using std::cout;
 using std::endl;
 using std::flush;
+using std::string;
 
 //________________________________________________________________________________
 
@@ -62,7 +63,9 @@ void AliAnalysisPairExtractor::extractDataDirectory(TString path, TString treeNa
     while ((ent = readdir(dir)) != NULL) {
       string name(ent->d_name);
       if (name.find(".") != std::string::npos) continue;
-      extractDataFile(path + name + "/JpsiCandidates_data.root");
+      std::stringstream filepath;
+      filepath << path.Data() << (path.EndsWith("/") ? "" : "/") << name << "/JpsiCandidates_data.root";
+      extractDataFile(filepath.str());
       cout << "Data Run: " << name << endl;
     }
     closedir (dir);
@@ -133,7 +136,9 @@ void AliAnalysisPairExtractor::extractMCDirectory(TString path, TString treeName
     while ((ent = readdir(dir)) != NULL) {
       string name(ent->d_name);
       if (name.find(".") != std::string::npos) continue;
-      extractMCFile(path + name + "/JpsiCandidates_mc.root");
+      std::stringstream filepath;
+      filepath << path.Data() << (path.EndsWith("/") ? "" : "/") << name << "/JpsiCandidates_MC.root";
+      extractMCFile(filepath.str());
       cout << "MC Run: " << name << endl;
     }
     closedir (dir);
