@@ -21,8 +21,10 @@ public:
   virtual ~AliAnalysisPairExtractor() {};
   
 public:
+    void extractDataDirectory(TString path, TString treeName="DstTree"); // extracts all files in subdirectories
     void extractDataFile(TString path, TString treeName="DstTree"); // opens, extracts and closes the file automatically
     void extractData(TTree* intree); // extracts data from tree into dataTree
+    void extractMCDirectory(TString path, TString treeName="DstTree"); // extracts all files in subdirectories
     void extractMCFile(TString path, TString treeName="DstTree"); // opens, extracts and closes the file automatically
     void extractMC(TTree* intree); // extracts mc from tree into signalTree and backgroundTree
     

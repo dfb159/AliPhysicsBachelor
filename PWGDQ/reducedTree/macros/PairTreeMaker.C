@@ -1,7 +1,4 @@
 #include <iostream>
-#include <array>
-#include <string>
-#include <dirent.h>
 #include <AliAnalysisPairExtractor.h>
 #include "AliAnalysisPairExtractor.cxx"
 
@@ -19,28 +16,8 @@ void PairTreeMaker() {
     
   cout << "Object Created!" << endl;
   
-  DIR *dir;
-  struct dirent *ent;
-  if ((dir = opendir("/alice/data/runs")) != NULL) {
-    /* print all the files and directories within directory */
-    while ((ent = readdir(dir)) != NULL) {
-      string name(ent->d_name);
-      if (name.find(".") != std::string::npos) continue;
-      ana.extractDataFile("/alice/data/runs/" + name + "/JpsiCandidates_data.root");
-      cout << "Data Run: " << name << endl;
-    }
-    closedir (dir);
-  }
-  if ((dir = opendir("/alice/sim/runs")) != NULL) {
-    /* print all the files and directories within directory */
-    while ((ent = readdir(dir)) != NULL) {
-      string name(ent->d_name);
-      if (name.find(".") != std::string::npos) continue;
-      ana.extractMCFile("/alice/sim/runs/" + name + "/JpsiCandidates_MC.root");
-      cout << "MC Run: " << name << endl;
-    }
-    closedir (dir);
-  }
+  ana.extractDataDirectory("/alice/data/runs");
+  ana.extractMCDirectory("/alice/sim/runs");
 
   cout << "data extraction finished!" << endl;
   

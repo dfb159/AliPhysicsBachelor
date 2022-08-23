@@ -7,6 +7,8 @@
 #include <TClonesArray.h>
 #include "AliAnalysisPairExtractor.h"
 #include <iostream>
+#include <dirent.h>
+#include <string.h>
 
 ClassImp(AliAnalysisPairExtractor)
 
@@ -44,6 +46,29 @@ void AliAnalysisPairExtractor::Write() {
   outfile->Close();
 }
 
+Bool_t AliAnalysisPairExtractor::checkTreeIntegrity(TTree* tree, Bool_t debug) {
+  Bool_t state = kTRUE;
+    
+  if (!state && debug) Error("AliAnalysisPairExtractor::checkTreeIntegrity", "The given TTree has an invalid data structure");
+  // check if tree is of the correct class
+  // check if the given tree contains all of the needed information
+  return state;
+}
+
+void AliAnalysisPairExtractor::extractDataDirectory(TString path, TString treeName) {
+  DIR *dir;
+  struct dirent *ent;
+  if ((dir = opendir(path.Data())) != NULL) {
+    while ((ent = readdir(dir)) != NULL) {
+      string name(ent->d_name);
+      if (name.find(".") != std::string::npos) continue;
+      extractDataFile(path + name + "/JpsiCandidates_data.root");
+      cout << "Data Run: " << name << endl;
+    }
+    closedir (dir);
+  }
+}
+
 void AliAnalysisPairExtractor::extractDataFile(TString path, TString treeName) {
   TFile* fin = TFile::Open(path.Data(), "READ");
   if (fin->GetListOfKeys()->GetEntries() > 0) {
@@ -52,15 +77,6 @@ void AliAnalysisPairExtractor::extractDataFile(TString path, TString treeName) {
 
   }
   fin->Close();
-}
-
-Bool_t AliAnalysisPairExtractor::checkTreeIntegrity(TTree* tree, Bool_t debug) {
-  Bool_t state = kTRUE;
-    
-  if (!state && debug) Error("AliAnalysisPairExtractor::checkTreeIntegrity", "The given TTree has an invalid data structure");
-  // check if tree is of the correct class
-  // check if the given tree contains all of the needed information
-  return state;
 }
 
 void AliAnalysisPairExtractor::extractData(TTree* intree) { // extraction method for data variable names
@@ -108,6 +124,20 @@ void AliAnalysisPairExtractor::extractData(TTree* intree) { // extraction method
     }
   }
   intree->ResetBranchAddresses();
+}
+
+void AliAnalysisPairExtractor::extractMCDirectory(TString path, TString treeName) {
+  DIR *dir;
+  struct dirent *ent;
+  if ((dir = opendir(path.Data())) != NULL) {
+    while ((ent = readdir(dir)) != NULL) {
+      string name(ent->d_name);
+      if (name.find(".") != std::string::npos) continue;
+      extractMCFile(path + name + "/JpsiCandidates_mc.root");
+      cout << "MC Run: " << name << endl;
+    }
+    closedir (dir);
+  }
 }
 
 void AliAnalysisPairExtractor::extractMCFile(TString path, TString treeName) {
