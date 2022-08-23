@@ -61,11 +61,9 @@ void AliAnalysisPairExtractor::extractDataDirectory(TString path, TString treeNa
   struct dirent *ent;
   if ((dir = opendir(path.Data())) != NULL) {
     while ((ent = readdir(dir)) != NULL) {
-      string name(ent->d_name);
-      if (name.find(".") != std::string::npos) continue;
-      std::stringstream filepath;
-      filepath << path.Data() << (path.EndsWith("/") ? "" : "/") << name << "/JpsiCandidates_data.root";
-      extractDataFile(filepath.str());
+      TString name(ent->d_name);
+      if (name == "." || name == "..") continue;
+      extractDataFile(path + (path.EndsWith("/") ? "" : "/") + name + "/JpsiCandidates_data.root");
       cout << "Data Run: " << name << endl;
     }
     closedir (dir);
@@ -134,11 +132,9 @@ void AliAnalysisPairExtractor::extractMCDirectory(TString path, TString treeName
   struct dirent *ent;
   if ((dir = opendir(path.Data())) != NULL) {
     while ((ent = readdir(dir)) != NULL) {
-      string name(ent->d_name);
-      if (name.find(".") != std::string::npos) continue;
-      std::stringstream filepath;
-      filepath << path.Data() << (path.EndsWith("/") ? "" : "/") << name << "/JpsiCandidates_MC.root";
-      extractMCFile(filepath.str());
+      TString name(ent->d_name);
+      if (name == "." || name == "..") continue;
+      extractMCFile(path + (path.EndsWith("/") ? "" : "/") + name + "/JpsiCandidates_MC.root");
       cout << "MC Run: " << name << endl;
     }
     closedir (dir);
