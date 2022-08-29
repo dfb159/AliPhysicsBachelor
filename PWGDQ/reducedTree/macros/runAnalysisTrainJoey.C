@@ -25,7 +25,7 @@ vector<TString> extractFiles(TString filename);
 TChain* makeChain(vector<TString> filename, TString inputType);
 
 //______________________________________________________________________________________________________________________________________
-void runAnalysisTrainJoey(TString infile="events.txt", TString runmode = "local", TString inputType="reducedEvent", Bool_t hasMC = kFALSE,
+void runAnalysisTrainJoey(TString infile="events.txt", TString runmode = "local", TString inputType="reducedEvent", Bool_t hasMC = kFALSE, Bool_t isEnriched = kFALSE, 
             TString addTask="AddTask_joey_FilterTrees.C", TString pathForMacros="$ALICE_PHYSICS/PWGDQ/reducedTree/macros",
             Bool_t writeTree = kFALSE, TString tasks="dst", TString prod = "LHC10h", Long64_t nEntries=-1L, Long64_t firstEntry=0L) {
 
@@ -188,6 +188,7 @@ void runAnalysisTrainJoey(TString infile="events.txt", TString runmode = "local"
     trainadd << (!runmode.CompareTo("grid") ? kTRUE : kFALSE) << ", "; // isAliRoot
     trainadd << runMode << ", "; // runMode
     trainadd << (hasMC ? "kTRUE" : "kFALSE") << ", "; // isMC
+    trainadd << (isEnriched ? "kTRUE" : "kFALSE") << ", "; // isEnriched Data -> Flag 14 for MB
     trainadd << "\"" << prod << "\")"; // prod
     std::string trainaddstr = trainadd.str();
     std::cout << "Calling Add macro using command string: " << trainaddstr << std::endl;

@@ -9,18 +9,17 @@
 #include <string>
 
 #include "TF1.h"
-#include "AliReducedAnalysisFilterTrees.cxx"
 
 #define ISPP // if process is pp or else
 //#def DO_RUNS // if runs should be counted
 
-void Setup(AliReducedAnalysisFilterTrees* processor, TString prod /*="LHC10h"*/);
-void SetupCuts(AliReducedAnalysisFilterTrees* processor, TString prod /*="LHC10h"*/);
-void SetupHistogramManager(AliReducedAnalysisFilterTrees* task,  TString prod /*="LHC10h"*/);
-void DefineHistograms(AliReducedAnalysisFilterTrees* task, TString prod /*="LHC10h"*/);
+void Setup(AliReducedAnalysisFilterTrees* processor, TString prod, Bool_t isEnriched);
+void SetupCuts(AliReducedAnalysisFilterTrees* processor, TString prod, Bool_t isEnriched);
+void SetupHistogramManager(AliReducedAnalysisFilterTrees* task,  TString prod);
+void DefineHistograms(AliReducedAnalysisFilterTrees* task, TString prod);
 
 //__________________________________________________________________________________________
-AliAnalysisTask* AddTask_joey_FilterTrees(Bool_t isAliRoot=kTRUE, Int_t runMode=1, Bool_t isMC = kFALSE, TString prod="LHC10h") {    
+AliAnalysisTask* AddTask_joey_FilterTrees(Bool_t isAliRoot=kTRUE, Int_t runMode=1, Bool_t isMC = kFALSE, Bool_t isEnriched = kFALSE, TString prod="LHC10h") {    
    // isAliRoot={kTRUE for ESD/AOD analysis on the grid, kFALSE for local analysis on reduced trees}
    // runMode={AliAnalysisTaskReducedEventProcessor::kUseOnTheFlyReducedEvents=1, AliAnalysisTaskReducedEventProcessor::kUseEventsFromTree=2}
 
@@ -45,7 +44,7 @@ AliAnalysisTask* AddTask_joey_FilterTrees(Bool_t isAliRoot=kTRUE, Int_t runMode=
   filterTask->UseFullTracksOnly(kTRUE);
   filterTask->DebugEvery(1000); // -1 for no debug
 
-  Setup(filterTask, prod);
+  Setup(filterTask, prod, isEnriched);
   // initialize an AliAnalysisTask which will wrap the AliReducedAnalysisFilterTrees such that it can be run in an aliroot analysis train (e.g. LEGO, local analysis etc)
   AliAnalysisTaskReducedEventProcessor* task = new AliAnalysisTaskReducedEventProcessor("ReducedEventAnalysisManager", runMode, kTRUE); // (name, runMode, writeTrees)
   task->AddTask(filterTask);
@@ -80,12 +79,12 @@ AliAnalysisTask* AddTask_joey_FilterTrees(Bool_t isAliRoot=kTRUE, Int_t runMode=
 
 
 //_________________________________________________________________
-void Setup(AliReducedAnalysisFilterTrees* processor, TString prod /*="LHC10h"*/) {
+void Setup(AliReducedAnalysisFilterTrees* processor, TString prod /*="LHC10h"*/, Bool_t isEnriched) {
   SetupCuts(processor, prod);
   SetupHistogramManager(processor, prod);
 }
   
-void SetupCuts(AliReducedAnalysisFilterTrees* processor, TString prod /*="LHC10h"*/) {
+void SetupCuts(AliReducedAnalysisFilterTrees* processor, TString prod /*="LHC10h"*/, Bool_t isEnriched) {
   // Configure cuts
   bool isMC = processor->GetRunOverMC();
   cout << "isMC : " << isMC << endl;
@@ -94,7 +93,7 @@ void SetupCuts(AliReducedAnalysisFilterTrees* processor, TString prod /*="LHC10h
   AliReducedEventCut* evCut1 = new AliReducedEventCut("Centrality","Centrality selection"); // in one AliCut ALL added cuts have to be passed
   evCut1->AddCut(AliReducedVarManager::kVtxZ, -10.0, 10.0); // vertex centrality
   evCut1->AddCut(AliReducedVarManager::kIsPhysicsSelection, 0.1, 2.); // request physics selection
-  if (!isMC) evCut1->AddEventTagFilterBit(14); // gsi enriched data: needs event->EventTag(14) for MB
+  if (isEnriched) evCut1->AddEventTagFilterBit(14); // gsi enriched data: needs event->EventTag(14) for MB
   evCut1->AddCut(AliReducedVarManager::kINT7Triggered, 0.1, 2.);
   //evCut1->AddCut(AliReducedVarManager::kHighMultV0Triggered, -0.1, 0.1);
   //evCut1->AddCut(AliReducedVarManager::kHighMultSPDTriggered, -0.1, 0.1);
