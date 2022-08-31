@@ -56,31 +56,39 @@ Bool_t AliAnalysisPairExtractor::checkTreeIntegrity(TTree* tree, Bool_t debug) {
   return state;
 }
 
-void AliAnalysisPairExtractor::extractDataDirectory(TString path, TString treeName) {
+ULong_t AliAnalysisPairExtractor::extractDataDirectory(const TString path, const TString treeName, const ULong_t N) {
+  if (N == 0) return 0;
+  ULong_t readPairs = 0;
   DIR *dir;
   struct dirent *ent;
   if ((dir = opendir(path.Data())) != NULL) {
     while ((ent = readdir(dir)) != NULL) {
       TString name(ent->d_name);
+      if (readPairs >= N) return readPairs;
       if (name == "." || name == "..") continue;
-      extractDataFile(path + (path.EndsWith("/") ? "" : "/") + name + "/JpsiCandidates_data.root");
+      readPairs += extractDataFile(path + (path.EndsWith("/") ? "" : "/") + name + "/JpsiCandidates_data.root", treeName, N-readPairs);
       cout << "Data Run: " << name << endl;
     }
     closedir (dir);
   }
+  return readPairs;
 }
 
-void AliAnalysisPairExtractor::extractDataFile(TString path, TString treeName) {
+ULong_t AliAnalysisPairExtractor::extractDataFile(const TString path, const TString treeName, const ULong_t N) {
+  if (N == 0) return 0;
   TFile* fin = TFile::Open(path.Data(), "READ");
+  ULong_t readPairs = 0;
   if (fin->GetListOfKeys()->GetEntries() > 0) {
     TTree* intree = fin->Get<TTree>(treeName.Data());
-    if (checkTreeIntegrity(intree)) extractData(intree);
-
+    if (checkTreeIntegrity(intree)) 
+      readPairs = extractData(intree, N);
   }
   fin->Close();
+  return readPairs;
 }
 
-void AliAnalysisPairExtractor::extractData(TTree* intree) { // extraction method for data variable names
+ULong_t AliAnalysisPairExtractor::extractData(const TTree* intree, const ULong_t N) { // extraction method for data variable names
+  if (N == 0) return 0;
   TClonesArray* fTracks;
   TClonesArray* fPairs;
   AliReducedTrackInfo* leg1;
@@ -90,10 +98,9 @@ void AliAnalysisPairExtractor::extractData(TTree* intree) { // extraction method
   AliReducedEventInfo* event = new AliReducedEventInfo();
   intree->SetBranchAddress("Event",&event);
   
-  
+  ULong_t readPairs = 0;
   int n = intree->GetEntries();
   for(int i = 0; i < n; i++) { // for every event
-  	//if (i > 1000) break;
     intree->GetEntry(i);
  
     fTracks = event->GetTracks();
@@ -101,56 +108,61 @@ void AliAnalysisPairExtractor::extractData(TTree* intree) { // extraction method
     TIter nextTrack(fTracks);
     TIter nextPair(fPairs);
     for (int j = 0; j < fPairs->GetEntries(); j++) { // for every candidate Pair
+      if (readPairs >= N) goto endOfLoop;
       pair = (AliReducedPairInfo*) nextPair();
-      
-      //cout << "Event " << i << " : Pair " << j << ", leg1 = " << pair->LegId(0) << ", leg2 = " << pair->LegId(1) << endl;
-      
-      //cout << "TrackIDs: ";
-      // search for both legs: leg1.charge > 0, leg2.charge < 0
       nextTrack.Reset(); leg1 = 0x0; leg2 = 0x0;
-      for (int k = 0; k < fTracks->GetEntries(); k++) {
-        track = (AliReducedTrackInfo*) nextTrack(); // TODO does this overwrite data or create new object (keep leg1, leg2 data)
-        if (track->IsMCTruth()) continue;
-        if (track->TrackId() == pair->LegId(0)) {leg1 = (AliReducedTrackInfo*) fTracks->At(k);} // does this create a nice copy
+      for (int k = 0; k < fTracks->GetEntries(); k++) { // search for both legs: leg1.charge > 0, leg2.charge < 0
+        track = (AliReducedTrackInfo*) nextTrack();
+        if (track->IsMCTruth()) continue; // MCTruth id is always 0
+        if (track->TrackId() == pair->LegId(0)) {leg1 = (AliReducedTrackInfo*) fTracks->At(k);}
         if (track->TrackId() == pair->LegId(1)) {leg2 = (AliReducedTrackInfo*) fTracks->At(k);}
-        //cout << track->TrackId() << ", ";
       }
-      //cout << endl;
       
       if (!leg1 || !leg2) {Error("AliAnalysisPairExtractor::extractData", "Could not find a corresponding track for both legs"); continue;}
       
       fillVars(event, pair, leg1, leg2);
       dataTree->Fill();
-      //cout << "fill Data" << endl;
+      readPairs++;
     }
   }
+  endOfLoop:
   intree->ResetBranchAddresses();
+  return readPairs;
 }
 
-void AliAnalysisPairExtractor::extractMCDirectory(TString path, TString treeName) {
+ULong_t AliAnalysisPairExtractor::extractMCDirectory(const TString path, const TString treeName, const ULong_t N) {
+  if (N == 0) return 0;
+  ULong_t readPairs = 0;
   DIR *dir;
   struct dirent *ent;
   if ((dir = opendir(path.Data())) != NULL) {
     while ((ent = readdir(dir)) != NULL) {
       TString name(ent->d_name);
+      if (readPairs >= N) return readPairs;
       if (name == "." || name == "..") continue;
       extractMCFile(path + (path.EndsWith("/") ? "" : "/") + name + "/JpsiCandidates_MC.root");
+      readPairs += extractMCFile(path + (path.EndsWith("/") ? "" : "/") + name + "/JpsiCandidates_MC.root", treeName, N-readPairs);
       cout << "MC Run: " << name << endl;
     }
     closedir (dir);
   }
+  return readPairs;
 }
 
-void AliAnalysisPairExtractor::extractMCFile(TString path, TString treeName) {
+ULong_t AliAnalysisPairExtractor::extractMCFile(const TString path, const TString treeName, const ULong_t N) {
+  if (N == 0) return 0;
   TFile* fin = TFile::Open(path.Data(), "READ");
+  ULong_t readPairs = 0;
   if (fin->GetListOfKeys()->GetEntries() > 0) {
     TTree* intree = fin->Get<TTree>(treeName.Data());
-    extractMC(intree);
+    readPairs = extractMC(intree);
   }
   fin->Close();
+  return readPairs;
 }
-void AliAnalysisPairExtractor::extractMC(TTree* intree) { // extraction method for MC variable names
 
+ULong_t AliAnalysisPairExtractor::extractMC(const TTree* intree, const ULong_t N) { // extraction method for MC variable names
+  if (N == 0) return 0;
   TClonesArray* fTracks;
   TClonesArray* fPairs;
   AliReducedTrackInfo* leg1;
@@ -160,7 +172,7 @@ void AliAnalysisPairExtractor::extractMC(TTree* intree) { // extraction method f
   AliReducedEventInfo* event = new AliReducedEventInfo();
   intree->SetBranchAddress("Event",&event);
   
-  
+  ULong_t readPairs = 0;
   int n = intree->GetEntries();
   for(int i = 0; i < n; i++) { // for every event
     intree->GetEntry(i);
@@ -170,47 +182,33 @@ void AliAnalysisPairExtractor::extractMC(TTree* intree) { // extraction method f
     TIter nextTrack(fTracks);
     TIter nextPair(fPairs);
     for (int j = 0; j < fPairs->GetEntries(); j++) { // for every candidate Pair
+      if (readPairs >= N) goto endOfLoop;
       pair = (AliReducedPairInfo*) nextPair();
       
-      //cout << "Event " << i << " : Pair " << j << ", leg1 = " << pair->LegId(0) << ", leg2 = " << pair->LegId(1) << endl;
-
-      //cout << "TrackIDs: ";
-      // search for both legs: leg1.charge > 0, leg2.charge < 0
       nextTrack.Reset(); leg1 = 0x0; leg2 = 0x0;
-      for (int k = 0; k < fTracks->GetEntries(); k++) {
-        track = (AliReducedTrackInfo*) nextTrack(); // TODO does this overwrite data or create new object (keep leg1, leg2 data)
-        if (track->IsMCTruth()) continue; // not a reconstructed track
-        if (track->TrackId() == pair->LegId(0)) {leg1 = (AliReducedTrackInfo*) fTracks->At(k);} // does this create a nice copy
+      for (int k = 0; k < fTracks->GetEntries(); k++) { // search for both legs: leg1.charge > 0, leg2.charge < 0
+        track = (AliReducedTrackInfo*) nextTrack();
+        if (track->IsMCTruth()) continue; // MCTruth id is always 0
+        if (track->TrackId() == pair->LegId(0)) {leg1 = (AliReducedTrackInfo*) fTracks->At(k);}
         if (track->TrackId() == pair->LegId(1)) {leg2 = (AliReducedTrackInfo*) fTracks->At(k);}
-        //cout << track->TrackId() << ", ";
       }
-      //cout << endl;
       
       if (!leg1 || !leg2) {Error("AliAnalysisPairExtractor::extractMC", "Could not find a corresponding track for both legs"); continue;}
-      //if (pdgMother != leg1->MCPdg(1) || pdgMother != leg2->MCPdg(1)) {Error("AliAnalysisPairExtractor::extractMC", "One of the legs has the wrong mother track ID"); continue;}
-
-      /*
-      cout << "leg1pdg: " << leg1->MCPdg(0) << " & " << pdgLeg1 << " = " << (leg1->MCPdg(0) == pdgLeg1) << endl;
-      cout << "leg2pdg: " << leg2->MCPdg(0) << " & " << pdgLeg2 << " = " << (leg2->MCPdg(0) == pdgLeg2) << endl;
-      cout << "mother1pdg: " << leg1->MCPdg(1) << " & " << pdgMother << " = " << (leg1->MCPdg(1) == pdgMother) << endl;
-      cout << "mother2pdg: " << leg2->MCPdg(1) << " & " << pdgMother << " = " << (leg2->MCPdg(1) == pdgMother) << endl;
-      cout << "motherlabel: " << leg1->MCLabel(1) << " & " << leg2->MCLabel(1) << " = " <<  (leg1->MCLabel(1) == leg2->MCLabel(1)) << endl;
-      
-      //*/
 
       fillVars(event, pair, leg1, leg2);
       if (pdgLeg1 == leg1->MCPdg(0) && pdgLeg2 == leg2->MCPdg(0) // both tracks are electrons
-        && pdgMother == leg1->MCPdg(1) && pdgMother == leg2->MCPdg(1) // both mothers are JPsi
-        && leg1->MCLabel(1) == leg2->MCLabel(1)) { // both mothers are the same particle
+          && pdgMother == leg1->MCPdg(1) && pdgMother == leg2->MCPdg(1) // both mothers are JPsi
+          && leg1->MCLabel(1) == leg2->MCLabel(1)) { // both mothers are the same particle
         signalTree->Fill();
-        //cout << "fill Signal MC" << endl;
       } else { // is a wrongly identified JPsi2ee decay
         backgroundTree->Fill();
-        //cout << "fill Background MC" << endl;
       }
+      readPairs++;
     }
   }
+  endOfLoop:
   intree->ResetBranchAddresses();
+  return readPairs;
 }
 
 void AliAnalysisPairExtractor::createBranches(TTree* tree) {

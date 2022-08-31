@@ -21,12 +21,12 @@ public:
   virtual ~AliAnalysisPairExtractor() {};
   
 public:
-    void extractDataDirectory(TString path, TString treeName="DstTree"); // extracts all files in subdirectories
-    void extractDataFile(TString path, TString treeName="DstTree"); // opens, extracts and closes the file automatically
-    void extractData(TTree* intree); // extracts data from tree into dataTree
-    void extractMCDirectory(TString path, TString treeName="DstTree"); // extracts all files in subdirectories
-    void extractMCFile(TString path, TString treeName="DstTree"); // opens, extracts and closes the file automatically
-    void extractMC(TTree* intree); // extracts mc from tree into signalTree and backgroundTree
+    ULong_t extractDataDirectory(const TString path, const TString treeName="DstTree", const ULong_t N=kMaxULong); // extracts all files in subdirectories up to N pairs
+    ULong_t extractDataFile(const TString path, const TString treeName="DstTree", const ULong_t N=kMaxULong); // opens, extracts and closes the file automatically
+    ULong_t extractData(const TTree* intree, const ULong_t N=kMaxULong); // extracts data from tree into dataTree
+    ULong_t extractMCDirectory(const TString path, const TString treeName="DstTree", const ULong_t N=kMaxULong); // extracts all files in subdirectories up to N pairs
+    ULong_t extractMCFile(const TString path, const TString treeName="DstTree", const ULong_t N=kMaxULong); // opens, extracts and closes the file automatically
+    ULong_t extractMC(const TTree* intree, const ULong_t N=kMaxULong); // extracts mc from tree into signalTree and backgroundTree
     
     void setPDG(int mother, int leg1, int leg2) {pdgMother=mother; pdgLeg1=leg1; pdgLeg2=leg2;}
     void SetUp(TString outpath); // Set outfile
@@ -111,6 +111,7 @@ private:
     TTree* dataTree; // detector data, where candidate truth is not known
     TTree* signalTree; // mc data, where candidate truth IS a JPsi
     TTree* backgroundTree; // mc data, where candidate truth IS NOT a JPsi
+    // map<TString, TTree>* trees;
     
     void createBranches(TTree* tree);
     void fillVars(AliReducedEventInfo* event, AliReducedPairInfo* pair, AliReducedTrackInfo* leg1, AliReducedTrackInfo* leg2);
