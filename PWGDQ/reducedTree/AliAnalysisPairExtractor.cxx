@@ -2,7 +2,7 @@
 // Implementation of the DataExtractor for further TMVA analysis for Pairs
 //
 // Creation date: 2022/05/05
-// Author: Jonathan Sigrist, j.sigrist@web.de
+// Author: Jonathan Sigrist, j.sigrist@wwu.de
 
 #include <TClonesArray.h>
 #include "AliAnalysisPairExtractor.h"
@@ -32,7 +32,7 @@ AliAnalysisPairExtractor::AliAnalysisPairExtractor(int mother, int leg1, int leg
 void AliAnalysisPairExtractor::SetUp(TString outpath) {
 	outfile = TFile::Open(outpath, "RECREATE");
 	
-	if (!outfile || !outfile->IsOpen()) {cout << "File could not be opened!" << endl; return;}
+	if (!outfile || !outfile->IsOpen()) {Error("AliAnalysisPairExtractor::SetUp", "File could not be opened!"); return;}
 	
   dataTree = new TTree("data", "candidates from experimental data"); createBranches(dataTree);
   signalTree = new TTree("mcSignal", "generated candidates with confirmed origin"); createBranches(signalTree);
@@ -47,12 +47,16 @@ void AliAnalysisPairExtractor::Write() {
   outfile->Close();
 }
 
-Bool_t AliAnalysisPairExtractor::checkTreeIntegrity(TTree* tree, Bool_t debug) {
+Bool_t AliAnalysisPairExtractor::checkTreeIntegrity(TTree* tree, const TString treeName) {
   Bool_t state = kTRUE;
-    
-  if (!state && debug) Error("AliAnalysisPairExtractor::checkTreeIntegrity", "The given TTree has an invalid data structure");
-  // check if tree is of the correct class
-  // check if the given tree contains all of the needed information
+
+  // check if tree has event key
+  // check if event items are of class AliReducedEventInfo
+  
+  // add {treeName: new TTree} into map
+  
+  if (!state) Error("AliAnalysisPairExtractor::checkTreeIntegrity", "The given TTree has an invalid data structure");
+
   return state;
 }
 
@@ -87,7 +91,7 @@ ULong_t AliAnalysisPairExtractor::extractDataFile(const TString path, const TStr
   return readPairs;
 }
 
-ULong_t AliAnalysisPairExtractor::extractData(const TTree* intree, const ULong_t N) { // extraction method for data variable names
+ULong_t AliAnalysisPairExtractor::extractData(TTree* intree, const ULong_t N) { // extraction method for data variable names
   if (N == 0) return 0;
   TClonesArray* fTracks;
   TClonesArray* fPairs;
@@ -161,7 +165,7 @@ ULong_t AliAnalysisPairExtractor::extractMCFile(const TString path, const TStrin
   return readPairs;
 }
 
-ULong_t AliAnalysisPairExtractor::extractMC(const TTree* intree, const ULong_t N) { // extraction method for MC variable names
+ULong_t AliAnalysisPairExtractor::extractMC(TTree* intree, const ULong_t N) { // extraction method for MC variable names
   if (N == 0) return 0;
   TClonesArray* fTracks;
   TClonesArray* fPairs;

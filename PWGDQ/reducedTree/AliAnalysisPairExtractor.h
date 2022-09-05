@@ -2,7 +2,7 @@
 // Definition of the DataExtractor for further TMVA analysis on Pairs
 //
 // Creation date: 2022/05/05
-// Author: Jonathan Sigrist, j.sigrist@web.de
+// Author: Jonathan Sigrist, j.sigrist@wwu.de
 
 #ifndef ALIANALYSISPAIREXTRACTOR_H
 #define ALIANALYSISPAIREXTRACTOR_H
@@ -18,15 +18,15 @@ class AliAnalysisPairExtractor {
 public:
     AliAnalysisPairExtractor(AliReducedPairInfo::CandidateType type=AliReducedPairInfo::CandidateType::kJpsiToEE); // Set up trees
     AliAnalysisPairExtractor(int mother, int leg1, int leg2); // Set up trees
-  virtual ~AliAnalysisPairExtractor() {};
+  virtual ~AliAnalysisPairExtractor() {}; // TODO clear trees map
   
 public:
     ULong_t extractDataDirectory(const TString path, const TString treeName="DstTree", const ULong_t N=kMaxULong); // extracts all files in subdirectories up to N pairs
     ULong_t extractDataFile(const TString path, const TString treeName="DstTree", const ULong_t N=kMaxULong); // opens, extracts and closes the file automatically
-    ULong_t extractData(const TTree* intree, const ULong_t N=kMaxULong); // extracts data from tree into dataTree
+    ULong_t extractData(TTree* intree, const ULong_t N=kMaxULong); // extracts data from tree into dataTree
     ULong_t extractMCDirectory(const TString path, const TString treeName="DstTree", const ULong_t N=kMaxULong); // extracts all files in subdirectories up to N pairs
     ULong_t extractMCFile(const TString path, const TString treeName="DstTree", const ULong_t N=kMaxULong); // opens, extracts and closes the file automatically
-    ULong_t extractMC(const TTree* intree, const ULong_t N=kMaxULong); // extracts mc from tree into signalTree and backgroundTree
+    ULong_t extractMC(TTree* intree, const ULong_t N=kMaxULong); // extracts mc from tree into signalTree and backgroundTree
     
     void setPDG(int mother, int leg1, int leg2) {pdgMother=mother; pdgLeg1=leg1; pdgLeg2=leg2;}
     void SetUp(TString outpath); // Set outfile
@@ -37,6 +37,15 @@ public:
 private:
 
     Int_t pdgMother, pdgLeg1, pdgLeg2;
+
+    TFile* outfile;
+    TTree* dataTree; // detector data, where candidate truth is not known
+    TTree* signalTree; // mc data, where candidate truth IS a JPsi
+    TTree* backgroundTree; // mc data, where candidate truth IS NOT a JPsi
+    // std::map<TString, TTree*> trees;
+    
+    void createBranches(TTree* tree);
+    void fillVars(AliReducedEventInfo* event, AliReducedPairInfo* pair, AliReducedTrackInfo* leg1, AliReducedTrackInfo* leg2);
     
     // Event Information
     Int_t runNo; // Run no.
@@ -106,15 +115,6 @@ private:
     UInt_t leg2trdNtracklets, leg2trdNtrackletsPID;
     UInt_t leg2trdSig1DElec, leg2trdSig1DPion;
     UInt_t leg2trdSig2DElec, leg2trdSig2DPion;
-    
-    TFile* outfile;
-    TTree* dataTree; // detector data, where candidate truth is not known
-    TTree* signalTree; // mc data, where candidate truth IS a JPsi
-    TTree* backgroundTree; // mc data, where candidate truth IS NOT a JPsi
-    // map<TString, TTree>* trees;
-    
-    void createBranches(TTree* tree);
-    void fillVars(AliReducedEventInfo* event, AliReducedPairInfo* pair, AliReducedTrackInfo* leg1, AliReducedTrackInfo* leg2);
     
     ClassDef(AliAnalysisPairExtractor, 42); //Analysis Task for extracting information from reduced tree candidates
 };
