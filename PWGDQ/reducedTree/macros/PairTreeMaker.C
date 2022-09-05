@@ -16,10 +16,10 @@ void PairTreeMaker(TString outfile="tree_candidates.root", TString dataDir="/ali
     
   cout << "Object Created!" << endl;
   
-  ana.extractDirectory(dataDir, "JCandidates_data.root", "DstTree", "MB", "Minimum Bias Events Flag 14.", kFALSE);
+  ana.extractDirectory(dataDir, "JpsiCandidates_data.root", "DstTree", "MB", "Minimum Bias Events Flag 14.", kFALSE);
   cout << "data extraction finished!" << endl;
 
-  ana.extractDirectory(mcDir, "JCandidates_MC.root", "DstTree", "injected", "injected Monte Carlo.", kTRUE);
+  ana.extractDirectory(mcDir, "JpsiCandidates_MC.root", "DstTree", "injected", "injected Monte Carlo.", kTRUE);
   cout << "mc extraction finished!" << endl;
   
   ana.Write();
