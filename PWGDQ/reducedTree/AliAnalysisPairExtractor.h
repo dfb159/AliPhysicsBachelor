@@ -7,6 +7,8 @@
 #ifndef ALIANALYSISPAIREXTRACTOR_H
 #define ALIANALYSISPAIREXTRACTOR_H
 
+#include <map>
+
 #include <TTree.h>
 #include <TFile.h>
 #include <AliReducedPairInfo.h>
@@ -20,29 +22,24 @@ public:
     AliAnalysisPairExtractor(int mother, int leg1, int leg2); // Set up trees
   virtual ~AliAnalysisPairExtractor() {}; // TODO clear trees map
   
-public:
-    ULong_t extractDataDirectory(const TString path, const TString treeName="DstTree", const ULong_t N=kMaxULong); // extracts all files in subdirectories up to N pairs
-    ULong_t extractDataFile(const TString path, const TString treeName="DstTree", const ULong_t N=kMaxULong); // opens, extracts and closes the file automatically
-    ULong_t extractData(TTree* intree, const ULong_t N=kMaxULong); // extracts data from tree into dataTree
-    ULong_t extractMCDirectory(const TString path, const TString treeName="DstTree", const ULong_t N=kMaxULong); // extracts all files in subdirectories up to N pairs
-    ULong_t extractMCFile(const TString path, const TString treeName="DstTree", const ULong_t N=kMaxULong); // opens, extracts and closes the file automatically
-    ULong_t extractMC(TTree* intree, const ULong_t N=kMaxULong); // extracts mc from tree into signalTree and backgroundTree
+public: 
+    ULong_t extractDirectory(const TString path, const TString fileName, const TString treeName="DstTree", const TString outName="tree", const TString outDescription="", const Bool_t isMC=kFALSE, const ULong_t N=kMaxULong); // extracts all files in subdirectories up to N pairs
+    ULong_t extractFile(const TString path, const TString treeName="DstTree", const TString outName="tree", const TString outDescription="", const Bool_t isMC=kFALSE, const ULong_t N=kMaxULong); // opens, extracts and closes the file automatically
+    ULong_t extractTree(TTree* intree, const TString outName="tree", const TString outDescription="", const Bool_t isMC=kFALSE, const ULong_t N=kMaxULong); // extracts mc from tree into signalTree and backgroundTree
     
     void setPDG(int mother, int leg1, int leg2) {pdgMother=mother; pdgLeg1=leg1; pdgLeg2=leg2;}
     void SetUp(TString outpath); // Set outfile
     void Write(); // Write data header to outfile and close it
     
-    Bool_t checkTreeIntegrity(TTree* tree, Bool_t debug=kFALSE); // TODO Check tree for valid extraction format
-    
+    Bool_t checkTreeIntegrity(TTree* inTree); // TODO Check tree for valid extraction format
+    TTree* getOutputTree(const TString treeName, const TString treeDescription); // Returns the correct tree with treeName. Sets a new tree up, if necessary.
+
 private:
 
     Int_t pdgMother, pdgLeg1, pdgLeg2;
 
     TFile* outfile;
-    TTree* dataTree; // detector data, where candidate truth is not known
-    TTree* signalTree; // mc data, where candidate truth IS a JPsi
-    TTree* backgroundTree; // mc data, where candidate truth IS NOT a JPsi
-    // std::map<TString, TTree*> trees;
+    std::map<TString, TTree*> trees;
     
     void createBranches(TTree* tree);
     void fillVars(AliReducedEventInfo* event, AliReducedPairInfo* pair, AliReducedTrackInfo* leg1, AliReducedTrackInfo* leg2);
