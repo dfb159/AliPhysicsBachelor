@@ -6,19 +6,19 @@ using std::cout;
 using std::endl;
 using std::flush;
 
-void PairTreeMaker(TString outfile="tree_candidates.root", TString dataDir="/alice/data/runs", TString mcDir="/alice/sim/runs") {
-	
+void PairTreeMakerLaptop() {
+
   cout << "Beginn!" << endl;
   
   AliAnalysisPairExtractor ana;
   ana.setPDG(443, -11, 11);
-  ana.SetUp(outfile);
+  ana.SetUp("tree_candidates.root");
   cout << "Object Created!" << endl;
   
-  ana.extractDirectory(dataDir, "JpsiCandidates_data.root", "DstTree", "MB", "Minimum Bias Events Flag 14.", kFALSE);
+  ana.extractDirectory("/alice/data/runs", "JpsiCandidates_data.root", "DstTree", "MB", "Minimum Bias Events Flag 14.", kFALSE);
   cout << "data extraction finished!" << endl;
 
-  ana.extractDirectory(mcDir, "JpsiCandidates_MC.root", "DstTree", "injected", "injected Monte Carlo.", kTRUE);
+  ana.extractDirectory("/alice/sim/runs", "JpsiCandidates_MC.root", "DstTree", "Injected", "injected Monte Carlo.", kTRUE);
   cout << "mc extraction finished!" << endl;
   
   ana.Write();
