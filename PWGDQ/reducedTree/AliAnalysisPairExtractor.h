@@ -8,9 +8,11 @@
 #define ALIANALYSISPAIREXTRACTOR_H
 
 #include <map>
+#include <string>
 
 #include <TTree.h>
 #include <TFile.h>
+#include <TMap.h>
 #include <AliReducedPairInfo.h>
 #include <AliReducedEventInfo.h>
 #include <AliReducedTrackInfo.h>
@@ -39,7 +41,7 @@ private:
     Int_t pdgMother, pdgLeg1, pdgLeg2;
 
     TFile* outfile;
-    std::map<TString, TTree*> trees;
+    TMap trees;
     
     void createBranches(TTree* tree);
     void fillVars(AliReducedEventInfo* event, AliReducedPairInfo* pair, AliReducedTrackInfo* leg1, AliReducedTrackInfo* leg2);

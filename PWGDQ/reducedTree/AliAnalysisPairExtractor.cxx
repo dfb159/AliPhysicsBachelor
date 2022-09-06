@@ -5,6 +5,7 @@
 // Author: Jonathan Sigrist, j.sigrist@wwu.de
 
 #include <TClonesArray.h>
+#include <TObjString.h>
 #include "AliAnalysisPairExtractor.h"
 #include <iostream>
 #include <dirent.h>
@@ -36,9 +37,7 @@ void AliAnalysisPairExtractor::SetUp(TString outpath) {
 
 void AliAnalysisPairExtractor::Write() {
   outfile->cd();
-  for (const auto& kv : trees) {
-    kv.second->Write();
-  }
+  trees.Write();
   outfile->Close();
 }
 
@@ -55,16 +54,19 @@ Bool_t AliAnalysisPairExtractor::checkTreeIntegrity(TTree* inTree) {
 }
 
 TTree* AliAnalysisPairExtractor::getOutputTree(const TString treeName, const TString treeDescription) {
-
+  
   TTree* tree;
-  if (trees.count(treeName) == 0) { // add {treeName: new TTree} into map
-    tree = new TTree(treeName.Data(), treeDescription.Data());
-    trees[treeName] = tree;
-    createBranches(tree);
+  if (trees.FindObject(treeName.Data())) {
+    cout << "Found something!" << endl;
+    tree = (TTree*) trees.GetValue(treeName.Data());
   } else {
-    tree = trees[treeName];
+    cout << "Adding new TTree" << endl;
+    outfile->cd();
+    TObjString* key = new TObjString(treeName);
+    tree = new TTree(treeName.Data(), treeDescription.Data());
+    createBranches(tree);
+    trees.Add(key, tree);
   }
-
   return tree;
 }
 
@@ -89,11 +91,12 @@ ULong_t AliAnalysisPairExtractor::extractDirectory(const TString path, const TSt
 ULong_t AliAnalysisPairExtractor::extractFile(const TString path, const TString treeName, const TString outName, const TString outDescription, const Bool_t isMC, const ULong_t N) {
   if (N == 0) return 0;
   TFile* fin = TFile::Open(path.Data(), "READ");
+	if (!fin || !fin->IsOpen()) {Error("AliAnalysisPairExtractor::SetUp", "File could not be opened!"); return 0;}
   ULong_t readPairs = 0;
   if (fin->GetListOfKeys()->GetEntries() > 0) {
     // TODO check if treeName is in GetListOfKeys
     TTree* intree = fin->Get<TTree>(treeName.Data());
-    readPairs = extractTree(intree, outName, outDescription, N);
+    readPairs = extractTree(intree, outName, outDescription, isMC, N);
   }
   fin->Close();
   return readPairs;
@@ -103,13 +106,19 @@ ULong_t AliAnalysisPairExtractor::extractTree(TTree* intree, const TString outNa
   
   if (N == 0) return 0;
   if (!checkTreeIntegrity(intree)) return 0;
-  TTree *dataTree, *signalTree, *backgroundTree;
+  TTree *dataTree=nullptr, *signalTree=nullptr, *backgroundTree=nullptr;
+
   if (isMC) {
-    signalTree = getOutputTree("mc_" + outName + "_True", outDescription + " MC confirmed origin.");
-    backgroundTree = getOutputTree("mc_" + outName + "_False", outDescription + " MC rejected origin.");
+    signalTree = getOutputTree("mc_" + outName + "_true", outDescription + " MC confirmed origin.");
+    backgroundTree = getOutputTree("mc_" + outName + "_false", outDescription + " MC rejected origin.");
   } else {
     dataTree = getOutputTree("data_" + outName, outDescription + " DATA unknown origin.");
   }
+
+  cout << "Trees After: " << endl;
+  //if (signalTree) signalTree->Print();
+  //if (backgroundTree) cout << "backgroundTree: " << backgroundTree->IsA() << endl;
+  //if (dataTree) cout << "dataTree: " << dataTree->IsA() << endl;
 
   TClonesArray* fTracks;
   TClonesArray* fPairs;

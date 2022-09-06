@@ -1,5 +1,5 @@
 #include <iostream>
-#include <AliAnalysisPairExtractor.h>
+#include "AliAnalysisPairExtractor.h"
 #include "AliAnalysisPairExtractor.cxx"
 
 using std::cout;
@@ -13,7 +13,6 @@ void PairTreeMaker(TString outfile="tree_candidates.root", TString dataDir="/ali
   AliAnalysisPairExtractor ana;
   ana.setPDG(443, -11, 11);
   ana.SetUp(outfile);
-    
   cout << "Object Created!" << endl;
   
   ana.extractDirectory(dataDir, "JpsiCandidates_data.root", "DstTree", "MB", "Minimum Bias Events Flag 14.", kFALSE);
@@ -23,6 +22,5 @@ void PairTreeMaker(TString outfile="tree_candidates.root", TString dataDir="/ali
   cout << "mc extraction finished!" << endl;
   
   ana.Write();
-  
   cout << "File saved!" << endl;
 }

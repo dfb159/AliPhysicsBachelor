@@ -15,8 +15,8 @@
 
 void Setup(AliReducedAnalysisFilterTrees* processor, TString prod, Bool_t isEnriched);
 void SetupCuts(AliReducedAnalysisFilterTrees* processor, TString prod, Bool_t isEnriched);
-void SetupHistogramManager(AliReducedAnalysisFilterTrees* task,  TString prod);
-void DefineHistograms(AliReducedAnalysisFilterTrees* task, TString prod);
+void SetupHistogramManager(AliReducedAnalysisFilterTrees* task,  TString prod, Bool_t isEnriched);
+void DefineHistograms(AliReducedAnalysisFilterTrees* task, TString prod, Bool_t isEnriched);
 
 //__________________________________________________________________________________________
 AliAnalysisTask* AddTask_joey_FilterTrees(Bool_t isAliRoot=kTRUE, Int_t runMode=1, Bool_t isMC = kFALSE, Bool_t isEnriched = kFALSE, TString prod="LHC10h") {    
@@ -80,8 +80,8 @@ AliAnalysisTask* AddTask_joey_FilterTrees(Bool_t isAliRoot=kTRUE, Int_t runMode=
 
 //_________________________________________________________________
 void Setup(AliReducedAnalysisFilterTrees* processor, TString prod /*="LHC10h"*/, Bool_t isEnriched) {
-  SetupCuts(processor, prod);
-  SetupHistogramManager(processor, prod);
+  SetupCuts(processor, prod, isEnriched);
+  SetupHistogramManager(processor, prod, isEnriched);
 }
   
 void SetupCuts(AliReducedAnalysisFilterTrees* processor, TString prod /*="LHC10h"*/, Bool_t isEnriched) {
@@ -167,20 +167,20 @@ void SetupCuts(AliReducedAnalysisFilterTrees* processor, TString prod /*="LHC10h
 
 
 //_________________________________________________________________
-void SetupHistogramManager(AliReducedAnalysisFilterTrees* task, TString prod /*="LHC10h"*/) {
+void SetupHistogramManager(AliReducedAnalysisFilterTrees* task, TString prod /*="LHC10h"*/, Bool_t isEnriched) {
   //
   // setup the histograms manager
   //
   AliReducedVarManager::SetDefaultVarNames();
   
-  DefineHistograms(task, prod);
+  DefineHistograms(task, prod, isEnriched);
   
   AliReducedVarManager::SetUseVars(task->GetHistogramManager()->GetUsedVars());
   AliReducedVarManager::SetUseVariable(AliReducedVarManager::kRunID);
 }
 
 //_________________________________________________________________
-void DefineHistograms(AliReducedAnalysisFilterTrees* task, TString prod /*="LHC10h"*/) {
+void DefineHistograms(AliReducedAnalysisFilterTrees* task, TString prod /*="LHC10h"*/, Bool_t isEnriched) {
   //
   // define histograms
   // NOTE: The DefineHistograms need to be called after the track cuts are defined because the name of the cuts are used in the histogram lists
