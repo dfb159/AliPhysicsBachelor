@@ -57,10 +57,8 @@ TTree* AliAnalysisPairExtractor::getOutputTree(const TString treeName, const TSt
   
   TTree* tree;
   if (trees.FindObject(treeName.Data())) {
-    cout << "Found something!" << endl;
     tree = (TTree*) trees.GetValue(treeName.Data());
   } else {
-    cout << "Adding new TTree" << endl;
     outfile->cd();
     TObjString* key = new TObjString(treeName);
     tree = new TTree(treeName.Data(), treeDescription.Data());
@@ -114,11 +112,6 @@ ULong_t AliAnalysisPairExtractor::extractTree(TTree* intree, const TString outNa
   } else {
     dataTree = getOutputTree("data_" + outName, outDescription + " DATA unknown origin.");
   }
-
-  cout << "Trees After: " << endl;
-  //if (signalTree) signalTree->Print();
-  //if (backgroundTree) cout << "backgroundTree: " << backgroundTree->IsA() << endl;
-  //if (dataTree) cout << "dataTree: " << dataTree->IsA() << endl;
 
   TClonesArray* fTracks;
   TClonesArray* fPairs;
