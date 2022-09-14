@@ -7,8 +7,9 @@
 #ifndef ALIANALYSISPAIREXTRACTOR_H
 #define ALIANALYSISPAIREXTRACTOR_H
 
-#include <map>
 #include <string>
+#include <list>
+#include <functional>
 
 #include <TTree.h>
 #include <TFile.h>
@@ -17,34 +18,82 @@
 #include <AliReducedEventInfo.h>
 #include <AliReducedTrackInfo.h>
 
+typedef std::function<Bool_t(AliReducedEventInfo* event, AliReducedPairInfo* pair, AliReducedTrackInfo* leg1, AliReducedTrackInfo* leg2)> Filter;
+
+class MassWindow {
+public:
+    MassWindow(Float_t low=0, Float_t high=0, Bool_t exclude=kFALSE) : low(low), high(high), exclude(exclude) {}
+    virtual ~MassWindow() {}
+    Bool_t operator()(AliReducedEventInfo* event, AliReducedPairInfo* pair, AliReducedTrackInfo* leg1, AliReducedTrackInfo* leg2) {return inRange(pair->Mass()) ^ exclude;}
+    Bool_t inRange(Float_t mass) {return (low <= mass && mass <= high);}
+private:
+    Float_t low, high;
+    Bool_t exclude;
+};
+
+class TopDecay {
+public:
+    TopDecay(Bool_t requestDecayFromTop) : fDecay(requestDecayFromTop) {}
+    virtual ~TopDecay() {}
+    Bool_t operator()(AliReducedEventInfo* event, AliReducedPairInfo* pair, AliReducedTrackInfo* leg1, AliReducedTrackInfo* leg2) {return isTopDecay(abs(leg1->MCPdg(2))) == fDecay;}
+    Bool_t isTopDecay(Int_t pdg) {
+        return (pdg >= 500 && pdg <= 599) || (pdg >= 5000 && pdg <= 5999); // Request top meson, or top hadron
+    }
+private:
+    Bool_t fDecay; // if top decay non prompt particles are requested
+};
+
+class PDGCut {
+public:
+    PDGCut(Int_t mother, Int_t leg1, Int_t leg2, Bool_t requestPDG=kFALSE) : pdgMother(mother), pdgLeg1(leg1), pdgLeg2(leg2), fPDG(requestPDG) {}
+    virtual ~PDGCut() {}
+    Bool_t operator()(AliReducedEventInfo* event, AliReducedPairInfo* pair, AliReducedTrackInfo* leg1, AliReducedTrackInfo* leg2) {return isPDGTrue(leg1, leg2) == fPDG;}
+    Bool_t isPDGTrue(AliReducedTrackInfo* leg1, AliReducedTrackInfo* leg2) {
+        return pdgLeg1 == leg1->MCPdg(0) && pdgLeg2 == leg2->MCPdg(0) // both tracks are of correct type
+        && pdgMother == leg1->MCPdg(1) && pdgMother == leg2->MCPdg(1) // both mothers are of correct and same type
+        && leg1->MCLabel(1) == leg2->MCLabel(1); // both mothers are the same particle
+    }
+private:
+    Int_t pdgMother, pdgLeg1, pdgLeg2; //requested PDG
+    Bool_t fPDG; // if selected pdg particles are requested
+};
+
+
 class AliAnalysisPairExtractor {
 
 public:
-    AliAnalysisPairExtractor(AliReducedPairInfo::CandidateType type=AliReducedPairInfo::CandidateType::kJpsiToEE); // Set up trees
-    AliAnalysisPairExtractor(int mother, int leg1, int leg2); // Set up trees
-  virtual ~AliAnalysisPairExtractor() {}; // TODO clear trees map
-  
-public: 
-    ULong_t extractDirectory(const TString path, const TString fileName, const TString treeName="DstTree", const TString outName="tree", const TString outDescription="", const Bool_t isMC=kFALSE, const ULong_t N=kMaxULong); // extracts all files in subdirectories up to N pairs
-    ULong_t extractFile(const TString path, const TString treeName="DstTree", const TString outName="tree", const TString outDescription="", const Bool_t isMC=kFALSE, const ULong_t N=kMaxULong); // opens, extracts and closes the file automatically
-    ULong_t extractTree(TTree* intree, const TString outName="tree", const TString outDescription="", const Bool_t isMC=kFALSE, const ULong_t N=kMaxULong); // extracts mc from tree into signalTree and backgroundTree
-    
-    void setPDG(int mother, int leg1, int leg2) {pdgMother=mother; pdgLeg1=leg1; pdgLeg2=leg2;}
-    void SetUp(TString outpath); // Set outfile
-    void Write(); // Write data header to outfile and close it
-    
-    Bool_t checkTreeIntegrity(TTree* inTree); // TODO Check tree for valid extraction format
-    TTree* getOutputTree(const TString treeName, const TString treeDescription); // Returns the correct tree with treeName. Sets a new tree up, if necessary.
+    AliAnalysisPairExtractor(TString path); // Open the outfile
+    virtual ~AliAnalysisPairExtractor(); // Write trees, delete pointers and close outfile
 
+    void setOutputTree(const TString treeName, const TString treeDescription); // sets the output tree for the following extraction
+    ULong_t extractDirectory(const TString path, const TString fileName, const TString treeName="DstTree", const ULong_t N=kMaxULong); // extracts all files in subdirectories up to N pairs
+    ULong_t extractFile(const TString path, const TString treeName="DstTree", const ULong_t N=kMaxULong); // opens, extracts and closes the file automatically
+    ULong_t extractTree(TTree* intree, const ULong_t N=kMaxULong); // extracts mc from tree into signalTree and backgroundTree
+
+    void addFilter(Filter func) {filters.push_back(func);}
+    void addMassWindow(Float_t low, Float_t high, Bool_t exclude=kFALSE) {addFilter(MassWindow(low,high,exclude));}
+    void addTopDecay(Bool_t requestTopDecay=kFALSE) {addFilter(TopDecay(requestTopDecay));}
+    void addPDGCut(Int_t mother, Int_t leg1, Int_t leg2, Bool_t requestPDG=kTRUE) {addFilter(PDGCut(mother, leg1, leg2, requestPDG));}
+    void addPDGCut(AliReducedPairInfo::CandidateType type=AliReducedPairInfo::CandidateType::kJpsiToEE, Bool_t requestPDG=kTRUE) {
+        switch(type) {
+            case AliReducedPairInfo::CandidateType::kJpsiToEE: addPDGCut(443, -11, 11, requestPDG); break; // positron is Leg1, electron is Leg2
+            default: Error("AliAnalysisPairExtractor", "Unknown Candidate Type. Please set PDGs manually!");
+        }
+    }
+    void clearFilters() {filters.clear();}
+    
 private:
 
-    Int_t pdgMother, pdgLeg1, pdgLeg2;
-
     TFile* outfile;
+    TTree* tree; // current output tree
     TMap trees;
+    std::list<Filter> filters;
     
     void createBranches(TTree* tree);
     void fillVars(AliReducedEventInfo* event, AliReducedPairInfo* pair, AliReducedTrackInfo* leg1, AliReducedTrackInfo* leg2);
+    Bool_t checkTreeIntegrity(TTree* inTree); // TODO Check tree for valid extraction format
+    Bool_t checkPairFilters(AliReducedEventInfo *event, AliReducedPairInfo *pair, AliReducedTrackInfo *leg1, AliReducedTrackInfo *leg2);
+
     
     // Event Information
     Int_t runNo; // Run no.

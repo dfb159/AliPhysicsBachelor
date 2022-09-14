@@ -20,25 +20,16 @@ using std::string;
 
 //________________________________________________________________________________
 
-AliAnalysisPairExtractor::AliAnalysisPairExtractor(AliReducedPairInfo::CandidateType type) {
-  switch(type) {
-  case AliReducedPairInfo::CandidateType::kJpsiToEE: AliAnalysisPairExtractor(443, -11, 11); break; // positron is Leg1, electron is Leg2
-  default: Error("AliAnalysisPairExtractor", "Unknown Candidate Type. Please set PDGs manually!"); AliAnalysisPairExtractor(0, 0, 0);
-  }
+AliAnalysisPairExtractor::AliAnalysisPairExtractor(TString path) {
+	outfile = TFile::Open(path, "RECREATE");
+	if (!outfile || !outfile->IsOpen()) Error("AliAnalysisPairExtractor::AliAnalysisPairExtractor", "File could not be opened!");
 }
 
-AliAnalysisPairExtractor::AliAnalysisPairExtractor(int mother, int leg1, int leg2) : 
-  pdgMother(mother), pdgLeg1(leg1), pdgLeg2(leg2) {}
-
-void AliAnalysisPairExtractor::SetUp(TString outpath) {
-	outfile = TFile::Open(outpath, "RECREATE");
-	if (!outfile || !outfile->IsOpen()) {Error("AliAnalysisPairExtractor::SetUp", "File could not be opened!"); return;}
-}
-
-void AliAnalysisPairExtractor::Write() {
+AliAnalysisPairExtractor::~AliAnalysisPairExtractor() {
   outfile->cd();
   trees.Write();
   outfile->Close();
+  trees.DeleteAll();
 }
 
 Bool_t AliAnalysisPairExtractor::checkTreeIntegrity(TTree* inTree) {
@@ -53,9 +44,15 @@ Bool_t AliAnalysisPairExtractor::checkTreeIntegrity(TTree* inTree) {
   return state;
 }
 
-TTree* AliAnalysisPairExtractor::getOutputTree(const TString treeName, const TString treeDescription) {
+Bool_t AliAnalysisPairExtractor::checkPairFilters(AliReducedEventInfo *event, AliReducedPairInfo *pair, AliReducedTrackInfo *leg1, AliReducedTrackInfo *leg2) {
+  for (Filter f : filters) {
+    if (!f(event, pair, leg1, leg2)) return kFALSE; // any filter fails
+  }
+  return kTRUE;
+}
+
+void AliAnalysisPairExtractor::setOutputTree(const TString treeName, const TString treeDescription) {
   
-  TTree* tree;
   if (trees.FindObject(treeName.Data())) {
     tree = (TTree*) trees.GetValue(treeName.Data());
   } else {
@@ -65,10 +62,9 @@ TTree* AliAnalysisPairExtractor::getOutputTree(const TString treeName, const TSt
     createBranches(tree);
     trees.Add(key, tree);
   }
-  return tree;
 }
 
-ULong_t AliAnalysisPairExtractor::extractDirectory(const TString path, const TString fileName, const TString treeName, const TString outName, const TString outDescription, const Bool_t isMC, const ULong_t N) {
+ULong_t AliAnalysisPairExtractor::extractDirectory(const TString path, const TString fileName, const TString treeName, const ULong_t N) {
   if (N == 0) return 0;
   ULong_t readPairs = 0;
   DIR *dir;
@@ -78,7 +74,7 @@ ULong_t AliAnalysisPairExtractor::extractDirectory(const TString path, const TSt
       TString run(ent->d_name);
       if (readPairs >= N) return readPairs;
       if (run == "." || run == "..") continue;
-      readPairs += extractFile(path + (path.EndsWith("/") ? "" : "/") + run + "/" + fileName, treeName, outName, outDescription, isMC, N-readPairs);
+      readPairs += extractFile(path + (path.EndsWith("/") ? "" : "/") + run + "/" + fileName, treeName, N-readPairs);
       cout << "Run: " << run << endl;
     }
     closedir (dir);
@@ -86,7 +82,7 @@ ULong_t AliAnalysisPairExtractor::extractDirectory(const TString path, const TSt
   return readPairs;
 }
 
-ULong_t AliAnalysisPairExtractor::extractFile(const TString path, const TString treeName, const TString outName, const TString outDescription, const Bool_t isMC, const ULong_t N) {
+ULong_t AliAnalysisPairExtractor::extractFile(const TString path, const TString treeName, const ULong_t N) {
   if (N == 0) return 0;
   TFile* fin = TFile::Open(path.Data(), "READ");
 	if (!fin || !fin->IsOpen()) {Error("AliAnalysisPairExtractor::SetUp", "File could not be opened!"); return 0;}
@@ -94,24 +90,16 @@ ULong_t AliAnalysisPairExtractor::extractFile(const TString path, const TString 
   if (fin->GetListOfKeys()->GetEntries() > 0) {
     // TODO check if treeName is in GetListOfKeys
     TTree* intree = fin->Get<TTree>(treeName.Data());
-    readPairs = extractTree(intree, outName, outDescription, isMC, N);
+    readPairs = extractTree(intree, N);
   }
   fin->Close();
   return readPairs;
 }
 
-ULong_t AliAnalysisPairExtractor::extractTree(TTree* intree, const TString outName, const TString outDescription, const Bool_t isMC, const ULong_t N) { // extraction method for data variable names
+ULong_t AliAnalysisPairExtractor::extractTree(TTree* intree, const ULong_t N) { // extraction method for data variable names
   
   if (N == 0) return 0;
   if (!checkTreeIntegrity(intree)) return 0;
-  TTree *dataTree=nullptr, *signalTree=nullptr, *backgroundTree=nullptr;
-
-  if (isMC) {
-    signalTree = getOutputTree("mc_" + outName + "_true", outDescription + " MC confirmed origin.");
-    backgroundTree = getOutputTree("mc_" + outName + "_false", outDescription + " MC rejected origin.");
-  } else {
-    dataTree = getOutputTree("data_" + outName, outDescription + " DATA unknown origin.");
-  }
 
   TClonesArray* fTracks;
   TClonesArray* fPairs;
@@ -144,21 +132,11 @@ ULong_t AliAnalysisPairExtractor::extractTree(TTree* intree, const TString outNa
       
       if (!leg1 || !leg2) {Error("AliAnalysisPairExtractor::extractTree", "Could not find a corresponding track for both legs"); continue;}
       
-      fillVars(event, pair, leg1, leg2);
-
-      if (isMC) {
-        if (pdgLeg1 == leg1->MCPdg(0) && pdgLeg2 == leg2->MCPdg(0) // both tracks are electrons
-            && pdgMother == leg1->MCPdg(1) && pdgMother == leg2->MCPdg(1) // both mothers are JPsi
-            && leg1->MCLabel(1) == leg2->MCLabel(1)) { // both mothers are the same particle
-          signalTree->Fill();
-        } else { // is a wrongly identified JPsi2ee decay
-          backgroundTree->Fill();
-        }
-      } else {
-        dataTree->Fill();
+      if (checkPairFilters(event, pair, leg1, leg2)) {
+        fillVars(event, pair, leg1, leg2);
+        tree->Fill();
+        readPairs++;
       }
-
-      readPairs++;
     }
   }
   endOfLoop:

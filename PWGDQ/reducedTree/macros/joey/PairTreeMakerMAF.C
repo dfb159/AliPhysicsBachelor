@@ -1,29 +1,31 @@
 #include <iostream>
-#include "AliAnalysisPairExtractor.h"
-#include "AliAnalysisPairExtractor.cxx"
+#include <AliAnalysisPairExtractor.h>
 
 using std::cout;
 using std::endl;
 using std::flush;
 
 void PairTreeMakerMAF() {
-
-  cout << "Beginn!" << endl;
+  AliAnalysisPairExtractor ana("/gluster1/j_sigr01/analysis/tree_candidates.root");
+  cout << "Analysis created!" << endl;
   
-  AliAnalysisPairExtractor ana;
-  ana.setPDG(443, -11, 11);
-  ana.SetUp("/gluster1/j_sigr01/analysis/tree_candidates.root");
-  cout << "Object Created!" << endl;
-  
-  ana.extractDirectory("/gluster1/j_sigr01/data_gsi/runs", "JpsiCandidates_data.root", "DstTree", "MB", "Minimum Bias GSI data with Event Flag 14.", kFALSE);
+  ana.setOutputTree("data_MB", "Minimum Bias GSI data with Event Flag 14");
+  ana.extractDirectory("/gluster1/j_sigr01/data_gsi/runs", "JpsiCandidates_data.root", "DstTree");
   cout << "data mb extraction finished!" << endl;
 
-  ana.extractDirectory("/gluster1/j_sigr01/data_gsi_all/runs", "JpsiCandidates_data.root", "DstTree", "Enriched", "All enriched GSI data", kFALSE);
+  ana.setOutputTree("data_Enriched", "All enriched GSI data");
+  ana.extractDirectory("/gluster1/j_sigr01/data_gsi_all/runs", "JpsiCandidates_data.root", "DstTree");
   cout << "data enriched extraction finished!" << endl;
 
-  ana.extractDirectory("/gluster1/j_sigr01/MC_injected/runs", "JpsiCandidates_MC.root", "DstTree", "Injected", "injected Monte Carlo.", kTRUE);
-  cout << "mc extraction finished!" << endl;
+  ana.addPDGCut(443, -11, 11, kTRUE);
+  ana.setOutputTree("mc_Injected_true", "injected Monte Carlo with confirmed origin");
+  ana.extractDirectory("/gluster1/j_sigr01/MC_injected/runs", "JpsiCandidates_MC.root", "DstTree");
+  ana.clearFilters();
+  cout << "mc true extraction finished!" << endl;
   
-  ana.Write();
-  cout << "File saved!" << endl;
+  ana.addPDGCut(443, -11, 11, kFALSE);
+  ana.setOutputTree("mc_Injected_false", "injected Monte Carlo with rejected origin");
+  ana.extractDirectory("/gluster1/j_sigr01/MC_injected/runs", "JpsiCandidates_MC.root", "DstTree");
+  ana.clearFilters();
+  cout << "mc false extraction finished!" << endl;
 }
